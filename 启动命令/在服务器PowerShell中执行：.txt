@@ -1,0 +1,20 @@
+# 1. 进入项目目录
+cd C:\Users\Administrator\Desktop\XYZW-wss
+
+# 2. 停止所有PM2进程
+pm2 stop all
+
+# 3. 删除所有PM2进程
+pm2 delete all
+
+# 4. 确认清空（应该显示"没有进程"）
+pm2 list
+
+# 5. 重新启动所有服务
+pm2 start ecosystem.config.cjs
+
+# 6. 查看服务状态
+pm2 status
+
+# 7. 查看日志（可选）
+pm2 logs --lines 50

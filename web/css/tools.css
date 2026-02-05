@@ -1,0 +1,789 @@
+/* ==================== 工具箱 - 与开源项目一致的UI设计 ==================== */
+
+:root {
+    /* 颜色变量 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-page: #f0f4ff;
+    
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    
+    --primary-color: #667eea;
+    --primary-color-hover: #5a6fd6;
+    --success-color: #22c55e;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+    
+    --border-light: #e2e8f0;
+    --border-radius-medium: 8px;
+    --border-radius-large: 12px;
+    --border-radius-xl: 16px;
+    --border-radius-full: 9999px;
+    
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    
+    --font-size-sm: 13px;
+    --font-size-md: 15px;
+    --font-size-lg: 17px;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-page);
+    background-image: 
+        radial-gradient(at 20% 20%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+        radial-gradient(at 80% 80%, rgba(118, 75, 162, 0.08) 0%, transparent 50%);
+    min-height: 100vh;
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* ==================== 主容器 ==================== */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    padding-bottom: 60px;
+}
+
+/* ==================== 连接面板 ==================== */
+.connection-panel {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-card);
+}
+
+.connection-panel label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+}
+
+.connection-panel select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    min-width: 200px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.connection-panel select:hover {
+    border-color: var(--primary-color);
+}
+
+.connection-panel select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* ==================== 状态徽章 ==================== */
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text-tertiary);
+}
+
+.status-badge.connected,
+.status-badge.active {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success-color);
+}
+
+.status-badge.disconnected {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+.status-badge.connecting {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ==================== 按钮 ==================== */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-secondary);
+}
+
+/* ==================== 工具卡片网格 ==================== */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+/* ==================== 状态卡片 - 与开源项目一致 ==================== */
+.status-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-card);
+    transition: all var(--transition-normal);
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+/* ==================== 卡片头部 ==================== */
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.status-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.status-icon img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.status-title {
+    flex: 1;
+}
+
+.status-title h3 {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.status-title p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: var(--spacing-xs) 0 0 0;
+}
+
+/* ==================== 卡片内容 ==================== */
+.card-content {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* ==================== 物品列表 ==================== */
+.total-points {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-medium);
+    margin-bottom: var(--spacing-md);
+}
+
+.total-points .label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.total-points .value {
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+}
+
+.item-list {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.item-list.fish-list,
+.item-list.recruit-list {
+    justify-content: space-around;
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.item img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: var(--spacing-xs);
+}
+
+.item-type {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.item-count {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+/* ==================== 选择器区域 ==================== */
+.selects {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.selects select {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.selects select:hover {
+    border-color: var(--primary-color);
+}
+
+.selects select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.selects input[type="number"] {
+    width: 80px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+}
+
+.selects input[type="number"]:hover {
+    border-color: var(--primary-color);
+}
+
+.selects input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* ==================== 卡片操作区 ==================== */
+.card-action {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.action-btn {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn.primary {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.primary:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.action-btn.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.action-btn.secondary:hover {
+    background: var(--border-light);
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 768px) {
+    .main-container {
+        padding: var(--spacing-lg);
+    }
+    
+    .tools-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .connection-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .connection-panel select {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .status-card {
+        min-height: auto;
+    }
+    
+    .item-list {
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+    
+    .item-list.box-list .item {
+        width: 45%;
+    }
+}
+
+
+/* ==================== Toast 提示 ==================== */
+#toastContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.toast {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 300px;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.toast-error {
+    background: var(--error-color);
+    color: white;
+}
+
+.toast-warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.toast-info {
+    background: var(--info-color);
+    color: white;
+}
+
+
+/* ==================== 身份牌 ==================== */
+.identity-card {
+    background: linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-light);
+}
+
+.identity-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.identity-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.identity-info h3 {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+}
+
+.identity-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+/* 角色信息区 */
+.role-profile {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: var(--border-radius-large);
+    margin-bottom: var(--spacing-md);
+}
+
+.avatar-container {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.role-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    background: var(--bg-tertiary);
+}
+
+.role-info {
+    flex: 1;
+}
+
+.role-name {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+}
+
+.role-stats {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.rank-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rank-icon {
+    font-size: 16px;
+}
+
+.rank-title {
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+}
+
+/* 资源网格 */
+.resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    max-height: 110px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.resources-grid.expanded {
+    max-height: none;
+}
+
+.res-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+}
+
+.res-item .label {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.res-item .value {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.resources-toggle {
+    margin-top: var(--spacing-sm);
+    text-align: left;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: 0;
+}
+
+.toggle-btn:hover {
+    text-decoration: underline;
+}
+
+/* 战力等级背景色 */
+.role-profile.rank-beginner { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); }
+.role-profile.rank-known { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+.role-profile.rank-veteran { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+.role-profile.rank-master { background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%); }
+.role-profile.rank-hero { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+.role-profile.rank-overlord { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+.role-profile.rank-supreme { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); }
+.role-profile.rank-emperor { background: linear-gradient(135deg, #fee2e2 0%, #dc2626 20%); }
+.role-profile.rank-legend { background: linear-gradient(135deg, #ede9fe 0%, #7c3aed 30%); }
+.role-profile.rank-infinite { background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 30%, #f59e0b 100%); }
+
+
+/* ==================== 消耗活动进度 ==================== */
+.activity-items {
+    margin-bottom: var(--spacing-md);
+}
+
+.activity-item-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.activity-item-row .label {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-semibold);
+}
+
+.activity-item-row .value {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.progress-header span:last-child {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-semibold);
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-footer {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-align: right;
+}
+
+.progress-footer.completed {
+    color: var(--success-color);
+}
+
+/* ==================== 升星助手 ==================== */
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.setting-row .label {
+    color: var(--text-secondary);
+}
+
+.setting-row select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-sm);
+}
+
+.progress-row {
+    display: flex;
+    align-items: center;
+}
+
+/* ==================== 武将升级 ==================== */
+.hero-detail {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-medium);
+}
+
+.hero-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--bg-secondary);
+}
+
+.hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}

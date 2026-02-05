@@ -1,0 +1,17 @@
+# 查看服务状态
+pm2 status
+
+# 查看实时日志
+pm2 logs
+
+# 查看某个服务的日志
+pm2 logs task-scheduler
+
+# 重启单个服务
+pm2 restart task-scheduler
+
+# 重启所有服务
+pm2 restart all
+
+# 停止所有服务
+pm2 stop all
