@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号总览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .header-left .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+        
+        .refresh-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .refresh-btn.refreshing {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-group {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .stat-title {
+            font-size: 16px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .stat-icon {
+            font-size: 24px;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value.success {
+            color: #10b981;
+        }
+        
+        .stat-value.warning {
+            color: #f59e0b;
+        }
+        
+        .stat-value.danger {
+            color: #ef4444;
+        }
+        
+        .stat-progress {
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        
+        .stat-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+        
+        .stat-progress-bar.success {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+        
+        .stat-progress-bar.warning {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .stat-progress-bar.danger {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .last-update {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            color: #ef4444;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>📊 账号总览</h1>
+                <div class="subtitle">实时监控所有账号的任务完成情况</div>
+            </div>
+            <button class="refresh-btn" onclick="loadData()" id="refreshBtn">
+                <span>🔄</span>
+                <span>刷新</span>
+            </button>
+        </div>
+        
+        <div id="statsContainer">
+            <div class="loading">正在加载数据...</div>
+        </div>
+        
+        <div class="last-update" id="lastUpdate">
+            最后更新: --
+        </div>
+    </div>
+    
+    <script>
+        // ✅ 脚本开始执行标记
+        console.log('=== Dashboard脚本开始执行 ===');
+        
+        // ✅ 格式化时间函数（全局，用于实时更新）
+        function 格式化时间(秒数) {
+            if (!秒数 || 秒数 <= 0) return '0小时';
+            const 小时 = Math.floor(秒数 / 3600);
+            const 分钟 = Math.floor((秒数 % 3600) / 60);
+            if (小时 > 0) {
+                return 分钟 > 0 ? `${小时}小时${分钟}分钟` : `${小时}小时`;
+            }
+            return `${分钟}分钟`;
+        }
+        
+        // ✅ 保存实时更新的基础数据（必须在所有函数之前定义）
+        let realTimeData = {
+            bottleHelper: {
+                accounts: [],  // [{accountName, helperStopTime, remainingTime}]
+                totalRemaining: 0,
+                count: 0
+            },
+            hangUp: {
+                accounts: [],  // [{accountName, lastTime, hangUpTime, remainingTime, elapsedTime}]
+                totalRemaining: 0,
+                totalElapsed: 0,
+                count: 0
+            }
+        };
+        
+        // ✅ 实时更新时间显示（根据绝对时间戳计算）
+        function updateRealTimeDisplay() {
+            const now = Date.now() / 1000; // 当前时间（秒）
+            
+            // 更新盐罐机器人
+            const bottleSubtitleEl = document.getElementById('bottle-helper-subtitle');
+            if (bottleSubtitleEl) {
+                if (realTimeData.bottleHelper.accounts.length > 0) {
+                    let totalRemaining = 0;
+                    let validCount = 0;
+                    
+                    realTimeData.bottleHelper.accounts.forEach(account => {
+                        // ✅ 根据绝对时间戳计算实际剩余时间
+                        const helperStopTime = account.helperStopTime || 0;
+                        const actualRemaining = Math.max(0, Math.floor(helperStopTime - now));
+                        if (actualRemaining > 0) {
+                            totalRemaining += actualRemaining;
+                            validCount++;
+                        }
+                    });
+                    
+                    if (validCount > 0) {
+                        const avgRemaining = Math.round(totalRemaining / validCount);
+                        const displayText = 格式化时间(avgRemaining);
+                        bottleSubtitleEl.textContent = `平均剩余: ${displayText}`;
+                    } else {
+                        bottleSubtitleEl.textContent = '未运行';
+                    }
+                } else {
+                    bottleSubtitleEl.textContent = '未运行';
+                }
+            }
+            
+            // 更新挂机状态
+            const hangupSubtitleEl = document.getElementById('hangup-subtitle');
+            if (hangupSubtitleEl) {
+                if (realTimeData.hangUp.accounts.length > 0) {
+                    let totalRemaining = 0;
+                    let totalElapsed = 0;
+                    let validCount = 0;
+                    
+                    realTimeData.hangUp.accounts.forEach(account => {
+                        // ✅ 根据绝对时间戳计算实际剩余时间和已挂时间
+                        const lastTime = account.lastTime || 0;
+                        const hangUpTime = account.hangUpTime || 0;
+                        const actualElapsed = Math.max(0, Math.floor(now - lastTime));
+                        const actualRemaining = Math.max(0, Math.floor(hangUpTime - actualElapsed));
+                        
+                        if (actualRemaining > 0) {
+                            totalRemaining += actualRemaining;
+                            totalElapsed += actualElapsed;
+                            validCount++;
+                        }
+                    });
+                    
+                    if (validCount > 0) {
+                        const avgRemaining = Math.round(totalRemaining / validCount);
+                        const avgElapsed = Math.round(totalElapsed / validCount);
+                        const displayText = `平均剩余: ${格式化时间(avgRemaining)} | 平均已挂: ${格式化时间(avgElapsed)}`;
+                        hangupSubtitleEl.textContent = displayText;
+                    } else {
+                        hangupSubtitleEl.textContent = '未运行';
+                    }
+                } else {
+                    hangupSubtitleEl.textContent = '未运行';
+                }
+            }
+        }
+        
+        // ✅ 启动实时更新定时器（每秒更新一次显示）
+        function startRealTimeUpdate() {
+            if (timeUpdateInterval) {
+                clearInterval(timeUpdateInterval);
+            }
+            console.log('启动实时更新定时器（每秒更新一次显示）');
+            timeUpdateInterval = setInterval(() => {
+                updateRealTimeDisplay();
+            }, 1000); // 每秒更新一次显示
+            // 立即执行一次
+            updateRealTimeDisplay();
+        }
+        
+        // ✅ 启动实时更新定时器（已废弃，改为使用startAutoRefresh每30秒重新获取数据）
+        function startRealTimeUpdate() {
+            // 不再需要此函数，数据会通过 startAutoRefresh() 每30秒重新获取
+            console.log('实时更新已改为每30秒重新获取数据');
+        }
+        
+        let autoRefreshInterval = null;
+        let isRefreshing = false;
+        let timeUpdateInterval = null;
+        
+        // 加载数据
+        async function loadData() {
+            if (isRefreshing) return; // 防止重复刷新
+            isRefreshing = true;
+            
+            // ✅ 清空实时更新数据（每次刷新时重新收集）
+            realTimeData.bottleHelper.accounts = [];
+            realTimeData.hangUp.accounts = [];
+            
+            // 更新刷新按钮状态
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add('refreshing');
+            }
+            
+            try {
+                const timestamp = new Date().getTime();
+                
+                // 读取tokens.json
+                const tokensRes = await fetch(`/data/tokens.json?t=${timestamp}`);
+                if (!tokensRes.ok) {
+                    throw new Error('未找到tokens.json，请先转换BIN文件');
+                }
+                const tokens = await tokensRes.json();
+                const totalAccounts = tokens.length;
+                
+                // 读取account-status.json
+                let statusData = {};
+                try {
+                    const statusRes = await fetch(`/data/account-status.json?t=${timestamp}`);
+                    if (statusRes.ok) {
+                        statusData = await statusRes.json();
+                    }
+                } catch (e) {
+                    console.log('暂无状态数据文件');
+                }
+                
+                // ✅ 读取task-schedule-record.json（用于获取执行时间）
+                let executionRecord = {};
+                try {
+                    const recordRes = await fetch(`/data/task-schedule-record.json?t=${timestamp}`);
+                    if (recordRes.ok) {
+                        executionRecord = await recordRes.json();
+                    }
+                } catch (e) {
+                    console.log('暂无执行记录文件');
+                }
+                
+                // 统计各项数据
+                const stats = calculateStats(tokens, statusData, executionRecord);
+                
+                // 渲染统计卡片
+                renderStats(stats, totalAccounts, tokens, statusData);
+                
+                // ✅ 数据加载完成后立即更新一次实时显示（延迟确保DOM已渲染）
+                setTimeout(() => {
+                    updateRealTimeDisplay();
+                }, 200);
+                
+                // 更新最后更新时间（显示下次自动刷新时间）
+                const nextRefreshTime = new Date(Date.now() + 30000);
+                document.getElementById('lastUpdate').textContent = `最后更新: ${new Date().toLocaleString('zh-CN')} | 下次自动刷新: ${nextRefreshTime.toLocaleTimeString('zh-CN')}`;
+                
+            } catch (error) {
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="error">
+                        <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                        <div>加载失败</div>
+                        <div style="margin-top: 10px; font-size: 14px; color: #999;">${error.message}</div>
+                    </div>
+                `;
+                console.error('加载数据失败:', error);
+            } finally {
+                isRefreshing = false;
+                // 恢复刷新按钮状态
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.classList.remove('refreshing');
+                }
+            }
+        }
+        
+        // ✅ 活动周类型判断逻辑（前端实现）
+        function 计算活动周开始时间(now) {
+            const 当前时间 = new Date(now);
+            const 今天周几 = 当前时间.getDay();
+            const 本周五12点 = new Date(当前时间);
+            let 距离本周五天数 = 0;
+            if (今天周几 < 5) {
+                距离本周五天数 = 5 - 今天周几;
+            } else if (今天周几 === 5) {
+                距离本周五天数 = 0;
+            } else {
+                距离本周五天数 = 5 - 今天周几 + 7;
+            }
+            本周五12点.setDate(当前时间.getDate() + 距离本周五天数);
+            本周五12点.setHours(12, 0, 0, 0);
+            本周五12点.setMinutes(0, 0, 0);
+            本周五12点.setSeconds(0, 0);
+            本周五12点.setMilliseconds(0);
+            if (当前时间.getTime() < 本周五12点.getTime()) {
+                本周五12点.setDate(本周五12点.getDate() - 7);
+            }
+            return 本周五12点.getTime();
+        }
+        
+        function 获取当前活动周类型(now = new Date()) {
+            const 活动类型 = { 0: '黑市周', 1: '招募周', 2: '宝箱周' };
+            const 基准时间 = new Date('2025-11-21 12:00:00').getTime();
+            const 当前活动周开始时间 = 计算活动周开始时间(now);
+            const 周期数 = Math.floor((当前活动周开始时间 - 基准时间) / (7 * 24 * 60 * 60 * 1000));
+            const 活动索引 = 周期数 % 3;
+            const 最终索引 = 活动索引 >= 0 ? 活动索引 : (活动索引 + 3) % 3;
+            return 活动类型[最终索引];
+        }
+        
+        // 计算统计数据
+        function calculateStats(tokens, statusData, executionRecord) {
+            const stats = {
+                // 每日任务
+                dailyTask75: 0,      // 75进度值完成
+                dailyTask100: 0,     // 100进度值完成
+                dailyTaskAvgPoint: 0, // 平均进度值
+                dailyTaskTotalPoint: 0, // 总进度值
+                
+                // 盐罐机器人
+                bottleHelper: 0,     // 运行中
+                bottleHelperTotalRemaining: 0, // 总剩余时间（秒）
+                
+                // 挂机状态
+                hangUp: 0,          // 运行中
+                hangUpTotalRemaining: 0, // 总剩余时间（秒）
+                hangUpTotalElapsed: 0,   // 总已挂机时间（秒）
+                
+                // 今日签到
+                signin: 0,          // 已签到
+                
+                // 本周答题
+                study: 0,           // 已答题
+                studyTotalScore: 0,  // 总分数
+                studyTotalCorrect: 0, // 总答对题数
+                
+                // 疯狂赛车
+                carKing: 0,         // 已执行（周一、二、三）
+                carKingTotalSent: 0,  // 总已发车数
+                carKingTotalCanClaim: 0, // 总可收车数
+                carKingTotalTickets: 0,  // 总刷新券数
+                carKingTotalCars: 0,     // 总车辆数
+                
+                // 四圣碎片购买
+                legionShop: 0,      // 已购买（本周）
+                
+                // 每日咸王
+                dailyBoss: 0,       // 已执行（今日）
+                
+                // 灯神
+                lampGod: 0,         // 已执行（今日）
+                
+                // 梦境
+                dreamland: 0,       // 已执行（本周）
+                
+                // 竞技场
+                arena: 0,           // 已执行（今日）
+                arenaTotalSuccess: 0,   // 总成功次数
+                arenaTotalAttempt: 0,   // 总尝试次数
+                
+                // BOSS战斗
+                bossBattle: 0,      // 已执行（今日）
+                
+                // 咸将塔
+                tower: {
+                    executed: 0,        // 已执行（6小时内）
+                    totalChallenges: 0, // 当天挑战总次数
+                    totalSuccess: 0,    // 当天成功总次数
+                    totalFail: 0,       // 当天失败总次数
+                    hasEnergy: 0,       // 有能量的账号数
+                    totalEnergy: 0,     // 总能量
+                    avgFloorChange: 0,  // 本周平均层数变化
+                    maxTowerId: 0       // 最高层数
+                },
+                
+                // 活动周
+                activityWeek: {
+                    type: 获取当前活动周类型(),  // 当前活动周类型
+                    purchased: 0,   // 已购买数量（仅黑市周）
+                    total: 0        // 总账号数
+                }
+            };
+            
+            // 获取今天和本周一
+            const now = new Date();
+            const today = now.toDateString();
+            const 本周一 = new Date(now);
+            本周一.setHours(0, 0, 0, 0);
+            const 距离周一天数 = now.getDay() === 0 ? 6 : now.getDay() - 1;
+            本周一.setDate(now.getDate() - 距离周一天数);
+            
+            // 判断是否在本周内
+            function 是否在本周内(dateString) {
+                if (!dateString) return false;
+                const date = new Date(dateString);
+                return date >= 本周一;
+            }
+            
+            // 判断是否是今天
+            function 是否是今天(dateString) {
+                if (!dateString) return false;
+                const date = new Date(dateString);
+                return date.toDateString() === today;
+            }
+            
+            // 判断疯狂赛车是否完成
+            // ✅ 标准：只要获取了状态（hasPlayed=true 或 已执行日期不为空）就算执行了
+            function 疯狂赛车是否完成(status) {
+                if (!status?.carKing) return false;
+                
+                const hasPlayed = status.carKing.hasPlayed || false;
+                const 已执行日期 = status.carKing.已执行日期 || [];
+                
+                // ✅ 只要 hasPlayed=true 或 已执行日期不为空，就算执行了
+                if (hasPlayed || (Array.isArray(已执行日期) && 已执行日期.length > 0)) {
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            // 遍历所有账号
+            tokens.forEach(token => {
+                const accountName = token.name;
+                const status = statusData[accountName];
+                
+                if (!status) return;
+                
+                // 每日任务
+                const dailyPoint = status.dailyTask?.dailyPoint || 0;
+                stats.dailyTaskTotalPoint += dailyPoint;
+                if (dailyPoint >= 75) stats.dailyTask75++;
+                if (dailyPoint >= 100) stats.dailyTask100++;
+                
+                // 盐罐机器人
+                if (status.bottleHelper?.isRunning) {
+                    stats.bottleHelper++;
+                    // ✅ 根据绝对时间戳计算实际剩余时间
+                    const now = Date.now() / 1000; // 当前时间（秒）
+                    const helperStopTime = status.bottleHelper.helperStopTime || 0;
+                    const actualRemainingTime = Math.max(0, Math.floor(helperStopTime - now));
+                    stats.bottleHelperTotalRemaining += actualRemainingTime;
+                    // ✅ 保存实时更新数据（使用绝对时间戳，前端可以实时计算）
+                    realTimeData.bottleHelper.accounts.push({
+                        accountName: accountName,
+                        helperStopTime: helperStopTime,  // 保存绝对时间戳
+                        remainingTime: actualRemainingTime  // 当前计算的剩余时间
+                    });
+                }
+                
+                // 挂机状态
+                if (status.hangUp?.totalTime > 0) {
+                    // ✅ 根据绝对时间戳计算实际剩余时间和已挂时间
+                    const now = Date.now() / 1000; // 当前时间（秒）
+                    const lastTime = status.hangUp.lastTime || 0;
+                    const hangUpTime = status.hangUp.hangUpTime || 0;
+                    const actualElapsedTime = Math.max(0, Math.floor(now - lastTime));
+                    const actualRemainingTime = Math.max(0, Math.floor(hangUpTime - actualElapsedTime));
+                    
+                    if (actualRemainingTime > 0) {
+                        stats.hangUp++;
+                        stats.hangUpTotalRemaining += actualRemainingTime;
+                        stats.hangUpTotalElapsed += actualElapsedTime;
+                        // ✅ 保存实时更新数据（使用绝对时间戳，前端可以实时计算）
+                        realTimeData.hangUp.accounts.push({
+                            accountName: accountName,
+                            lastTime: lastTime,  // 保存开始时间戳
+                            hangUpTime: hangUpTime,  // 保存总时长
+                            remainingTime: actualRemainingTime,  // 当前计算的剩余时间
+                            elapsedTime: actualElapsedTime  // 当前计算的已挂时间
+                        });
+                    }
+                }
+                
+                // 今日签到
+                if (status.signin?.isSignedIn) stats.signin++;
+                
+                // 本周答题
+                if (status.study?.hasAnswered) {
+                    const beginTime = status.study.beginTime;
+                    if (beginTime && 是否在本周内(new Date(beginTime * 1000).toISOString())) {
+                        stats.study++;
+                        stats.studyTotalScore += (status.study.score || 0);
+                        stats.studyTotalCorrect += (status.study.maxCorrectNum || 0);
+                    }
+                }
+                
+                // 疯狂赛车
+                if (疯狂赛车是否完成(status)) {
+                    stats.carKing++;
+                    const carKing = status.carKing || {};
+                    stats.carKingTotalSent += (carKing.已发车数量 || 0);
+                    stats.carKingTotalCanClaim += (carKing.可收车数量 || 0);
+                    stats.carKingTotalTickets += (carKing.刷新券数量 || 0);
+                    stats.carKingTotalCars += (carKing.总车辆数 || 0);
+                }
+                
+                // 四圣碎片购买（本周已购买）
+                const 购买日期 = status.legionShop?.购买日期;
+                if (购买日期 && 是否在本周内(购买日期)) {
+                    const 显示状态 = status.legionShop?.显示状态 || status.legionShop?.状态;
+                    if (显示状态 === 'purchased' || 显示状态 === 'insufficient') {
+                        stats.legionShop++;
+                    }
+                }
+                
+                // 每日咸王（今日已执行）
+                const 最后执行时间 = status.每日咸王?.最后执行时间;
+                if (最后执行时间 && 是否是今天(最后执行时间)) {
+                    stats.dailyBoss++;
+                }
+                
+                // 灯神（今日已执行）
+                // ✅ 优先从account-status.json读取，如果没有则从task-schedule-record.json读取
+                let 灯神执行时间 = status.灯神?.最后执行时间;
+                if (!灯神执行时间) {
+                    灯神执行时间 = executionRecord['灯神']?.accounts?.[accountName]?.lastExecutionTime;
+                }
+                if (灯神执行时间 && 是否是今天(灯神执行时间)) {
+                    stats.lampGod++;
+                }
+                
+                // 梦境（本周已执行）
+                // ✅ 优先从account-status.json读取，如果没有则从task-schedule-record.json读取
+                let 梦境执行时间 = status.梦境?.最后执行时间;
+                if (!梦境执行时间) {
+                    梦境执行时间 = executionRecord['梦境']?.accounts?.[accountName]?.lastExecutionTime;
+                }
+                if (梦境执行时间 && 是否在本周内(梦境执行时间)) {
+                    stats.dreamland++;
+                }
+                
+                // 竞技场（今日已执行）
+                // ✅ 优先从account-status.json读取，如果没有则从task-schedule-record.json读取
+                let 竞技场执行时间 = status.arena?.lastExecuteTime;
+                if (!竞技场执行时间) {
+                    竞技场执行时间 = executionRecord['竞技场']?.accounts?.[accountName]?.lastExecutionTime;
+                }
+                if (竞技场执行时间 && 是否是今天(竞技场执行时间)) {
+                    stats.arena++;
+                    const arena = status.arena || {};
+                    stats.arenaTotalSuccess += (arena.successCount || 0);
+                    stats.arenaTotalAttempt += (arena.attemptCount || 0);
+                }
+                
+                // BOSS战斗（今日已执行）
+                // ✅ 优先从account-status.json读取，如果没有则从task-schedule-record.json读取
+                let BOSS执行时间 = status.BOSS战斗?.最后执行时间;
+                if (!BOSS执行时间) {
+                    BOSS执行时间 = executionRecord['BOSS战斗']?.accounts?.[accountName]?.lastExecutionTime;
+                }
+                if (BOSS执行时间 && 是否是今天(BOSS执行时间)) {
+                    stats.bossBattle++;
+                }
+                
+                // 咸将塔统计
+                const tower = status.tower;
+                if (tower) {
+                    // 6小时内已执行
+                    const 塔执行时间 = tower.lastExecuteTime;
+                    if (塔执行时间) {
+                        const 执行时间 = new Date(塔执行时间);
+                        const 时间间隔 = now.getTime() - 执行时间.getTime();
+                        const 间隔小时 = 时间间隔 / (60 * 60 * 1000);
+                        if (间隔小时 <= 6) {
+                            stats.tower.executed++;
+                        }
+                    }
+                    
+                    // 当天挑战统计
+                    const today = tower.today || {};
+                    stats.tower.totalChallenges += (today.challengeCount || 0);
+                    stats.tower.totalSuccess += (today.successCount || 0);
+                    stats.tower.totalFail += (today.failCount || 0);
+                    
+                    // 有能量的账号（energy > 0）
+                    const energy = tower.energy || 0;
+                    stats.tower.totalEnergy += energy;
+                    if (energy > 0) {
+                        stats.tower.hasEnergy++;
+                    }
+                    
+                    // 最高层数
+                    const towerId = tower.towerId || 0;
+                    if (towerId > stats.tower.maxTowerId) {
+                        stats.tower.maxTowerId = towerId;
+                    }
+                    
+                    // 本周层数变化
+                    const week = tower.week || {};
+                    const initialTowerId = week.initialTowerId || tower.towerId || 0;
+                    const currentTowerId = week.currentTowerId || tower.towerId || 0;
+                    if (initialTowerId > 0 && currentTowerId > 0) {
+                        const floorChange = currentTowerId - initialTowerId;
+                        stats.tower.avgFloorChange += floorChange;
+                    }
+                }
+                
+                // ✅ 活动周购买统计（仅黑市周）
+                stats.activityWeek.total++;
+                if (stats.activityWeek.type === '黑市周') {
+                    const blackMarketWeek = status.blackMarketWeek;
+                    if (blackMarketWeek && blackMarketWeek.购买日期) {
+                        const 购买时间 = new Date(blackMarketWeek.购买日期);
+                        const 当前活动周开始时间 = 计算活动周开始时间(new Date());
+                        if (购买时间.getTime() >= 当前活动周开始时间) {
+                            stats.activityWeek.purchased++;
+                        }
+                    }
+                }
+            });
+            
+            return stats;
+        }
+        
+        // 渲染统计卡片
+        function renderStats(stats, totalAccounts, tokens, statusData) {
+            const container = document.getElementById('statsContainer');
+            
+            // ✅ 活动周卡片
+            const 当前活动周类型 = stats.activityWeek.type;
+            let 活动周执行记录 = '未启动';
+            let 活动周执行记录样式 = 'gray';
+            let 活动周执行记录数值 = '0/0';
+            
+            if (当前活动周类型 === '黑市周') {
+                const 已购买数 = stats.activityWeek.purchased;
+                const 总账号数 = stats.activityWeek.total;
+                活动周执行记录数值 = `${已购买数}/${总账号数}`;
+                if (已购买数 === 总账号数 && 总账号数 > 0) {
+                    活动周执行记录 = '已购买';
+                    活动周执行记录样式 = 'success';
+                } else if (已购买数 > 0) {
+                    活动周执行记录 = '部分已购买';
+                    活动周执行记录样式 = 'warning';
+                } else {
+                    活动周执行记录 = '未执行';
+                    活动周执行记录样式 = 'warning';
+                }
+            } else {
+                活动周执行记录 = '未启动';
+                活动周执行记录样式 = 'gray';
+                活动周执行记录数值 = '-/-';
+            }
+            
+            // 计算各种平均值和格式化数据
+            const 有层数变化的账号数 = tokens ? tokens.filter(token => {
+                const status = statusData[token.name];
+                if (!status?.tower) return false;
+                const week = status.tower.week || {};
+                const initialTowerId = week.initialTowerId || status.tower.towerId || 0;
+                return initialTowerId > 0;
+            }).length : 0;
+            const avgFloorChange = 有层数变化的账号数 > 0 
+                ? Math.round(stats.tower.avgFloorChange / 有层数变化的账号数) 
+                : 0;
+            
+            // ✅ 格式化时间函数已在全局定义，这里直接使用
+            
+            // 格式化层数
+            function 格式化层数(id) {
+                if (!id) return '-';
+                const 层数 = Math.floor(id / 10) + 1;
+                const 关卡 = id % 10;
+                return `${层数}-${关卡}`;
+            }
+            
+            // 计算平均值
+            const avgDailyPoint = totalAccounts > 0 ? Math.round(stats.dailyTaskTotalPoint / totalAccounts) : 0;
+            // ✅ 实时更新数据：更新基础数据
+            realTimeData.bottleHelper.count = stats.bottleHelper;
+            realTimeData.bottleHelper.totalRemaining = stats.bottleHelperTotalRemaining;
+            realTimeData.hangUp.count = stats.hangUp;
+            realTimeData.hangUp.totalRemaining = stats.hangUpTotalRemaining;
+            realTimeData.hangUp.totalElapsed = stats.hangUpTotalElapsed;
+            // 初始显示值（会被实时更新覆盖）
+            const avgBottleRemaining = stats.bottleHelper > 0 ? 格式化时间(Math.round(stats.bottleHelperTotalRemaining / stats.bottleHelper)) : '0小时';
+            const avgHangUpRemaining = stats.hangUp > 0 ? 格式化时间(Math.round(stats.hangUpTotalRemaining / stats.hangUp)) : '0小时';
+            const avgHangUpElapsed = stats.hangUp > 0 ? 格式化时间(Math.round(stats.hangUpTotalElapsed / stats.hangUp)) : '0小时';
+            const avgStudyScore = stats.study > 0 ? Math.round(stats.studyTotalScore / stats.study) : 0;
+            const avgStudyCorrect = stats.study > 0 ? Math.round(stats.studyTotalCorrect / stats.study) : 0;
+            const avgArenaSuccess = stats.arena > 0 ? Math.round(stats.arenaTotalSuccess / stats.arena) : 0;
+            const arenaSuccessRate = stats.arenaTotalAttempt > 0 ? Math.round((stats.arenaTotalSuccess / stats.arenaTotalAttempt) * 100) : 0;
+            const towerSuccessRate = stats.tower.totalChallenges > 0 ? Math.round((stats.tower.totalSuccess / stats.tower.totalChallenges) * 100) : 0;
+            const avgTowerEnergy = stats.tower.hasEnergy > 0 ? Math.round(stats.tower.totalEnergy / stats.tower.hasEnergy) : 0;
+            const maxTowerFloor = 格式化层数(stats.tower.maxTowerId);
+            
+            // 按分组组织卡片
+            const sections = [
+                {
+                    title: '📊 基础信息',
+                    cards: [
+                        {
+                            title: '总账号',
+                            icon: '👥',
+                            value: `${totalAccounts}`,
+                            subtitle: `共 ${totalAccounts} 个账号`,
+                            progress: 100,
+                            colorClass: 'success'
+                        },
+                        {
+                            title: `活动周 - ${当前活动周类型}`,
+                            icon: '📅',
+                            value: 活动周执行记录数值,
+                            subtitle: 活动周执行记录,
+                            progress: 当前活动周类型 === '黑市周' && stats.activityWeek.total > 0 
+                                ? Math.round((stats.activityWeek.purchased / stats.activityWeek.total) * 100) 
+                                : 0,
+                            colorClass: 活动周执行记录样式
+                        }
+                    ]
+                },
+                {
+                    title: '⏰ 持续运行状态',
+                    cards: [
+                        {
+                            title: '盐罐机器人',
+                            icon: '🤖',
+                            value: `${stats.bottleHelper}/${totalAccounts}`,
+                            subtitle: stats.bottleHelper > 0 ? `平均剩余: ${avgBottleRemaining}` : '未运行',
+                            subtitleId: 'bottle-helper-subtitle',  // ✅ 添加ID用于实时更新
+                            progress: totalAccounts > 0 ? Math.round((stats.bottleHelper / totalAccounts) * 100) : 0,
+                            colorClass: stats.bottleHelper === totalAccounts ? 'success' : stats.bottleHelper >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '挂机状态',
+                            icon: '⏰',
+                            value: `${stats.hangUp}/${totalAccounts}`,
+                            subtitle: stats.hangUp > 0 ? `平均剩余: ${avgHangUpRemaining} | 平均已挂: ${avgHangUpElapsed}` : '未运行',
+                            subtitleId: 'hangup-subtitle',  // ✅ 添加ID用于实时更新
+                            progress: totalAccounts > 0 ? Math.round((stats.hangUp / totalAccounts) * 100) : 0,
+                            colorClass: stats.hangUp === totalAccounts ? 'success' : stats.hangUp >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        }
+                    ]
+                },
+                {
+                    title: '📝 每日任务',
+                    cards: [
+                        {
+                            title: '每日任务 75进度值',
+                            icon: '📝',
+                            value: `${stats.dailyTask75}/${totalAccounts}`,
+                            subtitle: `平均进度: ${avgDailyPoint} | 100完成: ${stats.dailyTask100}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.dailyTask75 / totalAccounts) * 100) : 0,
+                            colorClass: stats.dailyTask75 === totalAccounts ? 'success' : stats.dailyTask75 >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '每日任务 100进度值',
+                            icon: '✅',
+                            value: `${stats.dailyTask100}/${totalAccounts}`,
+                            subtitle: `平均进度: ${avgDailyPoint} | 75完成: ${stats.dailyTask75}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.dailyTask100 / totalAccounts) * 100) : 0,
+                            colorClass: stats.dailyTask100 === totalAccounts ? 'success' : stats.dailyTask100 >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '今日签到',
+                            icon: '📅',
+                            value: `${stats.signin}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.signin / totalAccounts) * 100) : 0,
+                            colorClass: stats.signin === totalAccounts ? 'success' : stats.signin >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '竞技场',
+                            icon: '⚔️',
+                            value: `${stats.arena}/${totalAccounts}`,
+                            subtitle: stats.arena > 0 ? `平均成功: ${avgArenaSuccess}次 | 成功率: ${arenaSuccessRate}%` : '今日未执行',
+                            progress: totalAccounts > 0 ? Math.round((stats.arena / totalAccounts) * 100) : 0,
+                            colorClass: stats.arena === totalAccounts ? 'success' : stats.arena >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: 'BOSS战斗',
+                            icon: '👹',
+                            value: `${stats.bossBattle}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.bossBattle / totalAccounts) * 100) : 0,
+                            colorClass: stats.bossBattle === totalAccounts ? 'success' : stats.bossBattle >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '每日咸王',
+                            icon: '👑',
+                            value: `${stats.dailyBoss}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.dailyBoss / totalAccounts) * 100) : 0,
+                            colorClass: stats.dailyBoss === totalAccounts ? 'success' : stats.dailyBoss >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '灯神扫荡券',
+                            icon: '🪔',
+                            value: `${stats.lampGod}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.lampGod / totalAccounts) * 100) : 0,
+                            colorClass: stats.lampGod === totalAccounts ? 'success' : stats.lampGod >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '咸将塔',
+                            icon: '🗼',
+                            value: `${stats.tower.executed}/${totalAccounts}`,
+                            subtitle: `挑战:${stats.tower.totalChallenges} 成功:${stats.tower.totalSuccess}(${towerSuccessRate}%) 失败:${stats.tower.totalFail} | 有能量:${stats.tower.hasEnergy}(${avgTowerEnergy}点) | 最高:${maxTowerFloor} | 本周平均提升:${avgFloorChange}层`,
+                            progress: totalAccounts > 0 ? Math.round((stats.tower.executed / totalAccounts) * 100) : 0,
+                            colorClass: stats.tower.executed === totalAccounts ? 'success' : stats.tower.executed >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        }
+                    ]
+                },
+                {
+                    title: '📅 周期性任务',
+                    cards: [
+                        {
+                            title: '本周答题',
+                            icon: '📚',
+                            value: `${stats.study}/${totalAccounts}`,
+                            subtitle: stats.study > 0 ? `平均分数: ${avgStudyScore} | 平均答对: ${avgStudyCorrect}题` : '未答题',
+                            progress: totalAccounts > 0 ? Math.round((stats.study / totalAccounts) * 100) : 0,
+                            colorClass: stats.study === totalAccounts ? 'success' : stats.study >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '疯狂赛车',
+                            icon: '🏎️',
+                            value: `${stats.carKing}/${totalAccounts}`,
+                            subtitle: stats.carKing > 0 ? `已发车:${stats.carKingTotalSent} 可收车:${stats.carKingTotalCanClaim} | 刷新券:${stats.carKingTotalTickets} | 总车辆:${stats.carKingTotalCars}` : '未执行',
+                            progress: totalAccounts > 0 ? Math.round((stats.carKing / totalAccounts) * 100) : 0,
+                            colorClass: stats.carKing === totalAccounts ? 'success' : stats.carKing >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '四圣碎片购买',
+                            icon: '💎',
+                            value: `${stats.legionShop}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.legionShop / totalAccounts) * 100) : 0,
+                            colorClass: stats.legionShop === totalAccounts ? 'success' : stats.legionShop >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        },
+                        {
+                            title: '梦境',
+                            icon: '💤',
+                            value: `${stats.dreamland}/${totalAccounts}`,
+                            progress: totalAccounts > 0 ? Math.round((stats.dreamland / totalAccounts) * 100) : 0,
+                            colorClass: stats.dreamland === totalAccounts ? 'success' : stats.dreamland >= totalAccounts * 0.8 ? 'warning' : 'danger'
+                        }
+                    ]
+                }
+            ];
+            
+            container.innerHTML = sections.map(section => `
+                <div class="section-group">
+                    <div class="section-title">${section.title}</div>
+                    <div class="stats-grid">
+                        ${section.cards.map(card => `
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-title">${card.title}</div>
+                                    <div class="stat-icon">${card.icon}</div>
+                                </div>
+                                <div class="stat-value ${card.colorClass}">${card.value}</div>
+                                ${card.subtitle ? `<div id="${card.subtitleId || ''}" style="font-size: 12px; color: #666; margin-top: 4px; margin-bottom: 8px; line-height: 1.4;">${card.subtitle}</div>` : ''}
+                                <div class="stat-progress">
+                                    <div class="stat-progress-bar ${card.colorClass}" style="width: ${card.progress}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ✅ 页面加载完成标记
+        console.log('=== 页面脚本加载完成，开始初始化 ===');
+        
+        // ✅ 启动实时更新（立即启动，即使数据还没加载）
+        console.log('准备启动实时更新定时器...');
+        startRealTimeUpdate();
+        
+        // 页面加载时自动加载数据
+        console.log('准备加载数据...');
+        loadData();
+        
+        // 每30秒自动刷新数据（不刷新页面）
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(() => {
+                if (!isRefreshing) {
+                    loadData();
+                }
+            }, 30000); // 30秒
+        }
+        
+        // 启动自动刷新
+        startAutoRefresh();
+        
+        // 页面可见性变化时，如果页面重新可见，立即刷新一次
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && !isRefreshing) {
+                loadData();
+            }
+        });
+    </script>
+</body>
+</html>
+
