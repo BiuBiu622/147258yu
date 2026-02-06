@@ -1,0 +1,141 @@
+:root {
+    --primary-color: #4A90E2;
+    --success-color: #2ECC71;
+    --warning-color: #F1C40F;
+    --danger-color: #E74C3C;
+    --bg-color: #F4F7F9;
+    --text-color: #2C3E50;
+    --card-bg: #FFFFFF;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.license-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    overflow: hidden;
+    padding: 30px;
+}
+
+.card-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.card-header h1 {
+    margin: 10px 0 0 0;
+    font-size: 24px;
+}
+
+.icon-box {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+.icon-warning { background: rgba(241, 196, 15, 0.1); color: var(--warning-color); }
+.icon-success { background: rgba(46, 204, 113, 0.1); color: var(--success-color); }
+.icon-lock { background: rgba(74, 144, 226, 0.1); color: var(--primary-color); }
+
+.info-item {
+    margin-bottom: 20px;
+}
+
+.info-label {
+    font-size: 14px;
+    color: #7F8C8D;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-family: 'Courier New', Courier, monospace;
+    background: #F8F9FA;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #E9ECEF;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #357ABD;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.copy-hint {
+    font-size: 12px;
+    color: var(--primary-color);
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.input-group {
+    margin-top: 30px;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    resize: none;
+    height: 100px;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.status-badge.success { background: #E8F8F0; color: #27AE60; }
+.status-badge.danger { background: #FDEDEC; color: #CB4335; }

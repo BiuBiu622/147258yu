@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授权管理后台 - XYZW 管理员</title>
+    <link rel="stylesheet" href="/css/license.css">
+    <style>
+        body {
+            display: block;
+            padding: 40px;
+        }
+
+        .license-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #F8F9FA;
+            font-weight: 600;
+            color: #666;
+        }
+
+        tr:hover {
+            background: #FDFDFD;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .action-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-delete {
+            color: var(--danger-color);
+            border-color: #fadbd8;
+        }
+
+        .btn-unbind {
+            color: var(--warning-color);
+            border-color: #fef5d1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="license-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1 style="margin: 0;">🚀 授权码管理后台</h1>
+            <button class="btn btn-primary" style="width: auto; margin-top: 0;" onclick="showGenerator()">+
+                生成新授权码</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">总授权数</div>
+                <div id="stat-total" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">已绑定机器</div>
+                <div id="stat-used" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">待激活</div>
+                <div id="stat-pending" class="stat-value">0</div>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: none; padding: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>备注/机器名</th>
+                        <th>授权码</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>到期时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="license-table-body">
+                    <!-- 数据加载中 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 生成弹窗 -->
+    <div id="generator-modal" class="modal">
+        <div class="modal-content">
+            <h3>生成授权码</h3>
+            <div class="info-item">
+                <div class="info-label">绑定机器码 (可选):</div>
+                <input type="text" id="gen-machine-id" class="info-value" style="width: 100%;" placeholder="留空则为通用码">
+            </div>
+            <div class="info-item">
+                <div class="info-label">授权类型:</div>
+                <select id="gen-type" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                    <option value="trial">试用版 (7天)</option>
+                    <option value="standard">标准版 (1年)</option>
+                    <option value="permanent" selected>永久版</option>
+                </select>
+            </div>
+            <div class="info-item">
+                <div class="info-label">备注:</div>
+                <input type="text" id="gen-note" class="info-value" style="width: 100%;" placeholder="例如：某某用户">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="generate()">确认生成</button>
+                <button class="btn btn-outline" onclick="hideGenerator()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadLicenses() {
+            try {
+                // 假设端口3000是配置服务器，在 integration 中我们已经把 API 加进去了
+                const res = await fetch('http://' + window.location.hostname + ':3000/api/admin/license/list');
+                const data = await res.json();
+
+                if (data.success) {
+                    renderTable(data.licenses);
+                    updateStats(data.licenses);
+                }
+            } catch (e) {
+                console.error('加载失败', e);
+            }
+        }
+
+        function renderTable(licenses) {
+            const tbody = document.getElementById('license-table-body');
+            tbody.innerHTML = '';
+
+            licenses.forEach(l => {
+                const tr = document.createElement('tr');
+                const isUsed = !!l.machineId;
+
+                tr.innerHTML = `
+                    <td>${l.note || '-'}</td>
+                    <td style="font-family: monospace;">${l.licenseKey.substring(0, 10)}...</td>
+                    <td>${l.type === 'permanent' ? '永久' : (l.type === 'trial' ? '试用' : '标准')}</td>
+                    <td><span class="status-badge ${isUsed ? 'success' : 'danger'}">${isUsed ? '已激活' : '待使用'}</span></td>
+                    <td>${l.expiresAt === 'permanent' ? '永久' : new Date(l.expiresAt).toLocaleDateString()}</td>
+                    <td>
+                        <button class="action-btn" onclick="copyKey('${l.licenseKey}')">复制</button>
+                        ${isUsed ? `<button class="action-btn btn-unbind" onclick="unbind('${l.id}')">解绑</button>` : ''}
+                        <button class="action-btn btn-delete" onclick="remove('${l.id}')">删除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateStats(licenses) {
+            document.getElementById('stat-total').textContent = licenses.length;
+            document.getElementById('stat-used').textContent = licenses.filter(l => l.machineId).length;
+            document.getElementById('stat-pending').textContent = licenses.filter(l => !l.machineId).length;
+        }
+
+        function showGenerator() { document.getElementById('generator-modal').style.display = 'flex'; }
+        function hideGenerator() { document.getElementById('generator-modal').style.display = 'none'; }
+
+        async function generate() {
+            const machineId = document.getElementById('gen-machine-id').value.trim();
+            const type = document.getElementById('gen-type').value;
+            const note = document.getElementById('gen-note').value.trim();
+
+            const res = await fetch('http://' + window.location.hostname + ':3000/api/admin/license/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ machineId, type, note })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('生成成功!');
+                hideGenerator();
+                loadLicenses();
+            }
+        }
+
+        async function unbind(id) {
+            if (!confirm('确定要解除该授权码与当前机器的绑定吗？')) return;
+            const res = await fetch(`http://${window.location.hostname}:3000/api/admin/license/unbind/${id}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) loadLicenses();
+        }
+
+        async function remove(id) {
+            if (!confirm('确定要删除这条授权记录吗？该操作不可撤销。')) return;
+            const res = await fetch(`http://${window.location.hostname}:3000/api/admin/license/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) loadLicenses();
+        }
+
+        function copyKey(key) {
+            // 使用 fallback 方案支持 HTTP 环境
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(key).then(() => {
+                    alert('授权码已复制');
+                }).catch(() => {
+                    fallbackCopy(key);
+                });
+            } else {
+                fallbackCopy(key);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('授权码已复制');
+            } catch (err) {
+                alert('复制失败，请手动复制: ' + text);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        loadLicenses();
+    </script>
+</body>
+
+</html>

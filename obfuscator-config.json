@@ -1,0 +1,30 @@
+{
+    "compact": true,
+    "controlFlowFlattening": false,
+    "deadCodeInjection": false,
+    "debugProtection": false,
+    "disableConsoleOutput": false,
+    "identifierNamesGenerator": "hexadecimal",
+    "log": false,
+    "numbersToExpressions": true,
+    "renameGlobals": true,
+    "selfDefending": false,
+    "simplify": true,
+    "splitStrings": true,
+    "splitStringsChunkLength": 10,
+    "stringArray": true,
+    "stringArrayCallsTransform": true,
+    "stringArrayEncoding": [
+        "base64"
+    ],
+    "stringArrayIndexShift": true,
+    "stringArrayRotate": true,
+    "stringArrayShuffle": true,
+    "stringArrayWrappersCount": 2,
+    "stringArrayWrappersChainedCalls": true,
+    "stringArrayWrappersParametersMaxCount": 4,
+    "stringArrayWrappersType": "function",
+    "stringArrayThreshold": 0.75,
+    "transformObjectKeys": true,
+    "unicodeEscapeSequence": false
+}

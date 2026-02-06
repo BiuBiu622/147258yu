@@ -1,0 +1,13 @@
+[
+  {
+    "id": "test-license-id",
+    "licenseKey": "73FF854CBB35EF93",
+    "machineId": "44B5952BDE9E75DA",
+    "type": "permanent",
+    "expiresAt": "permanent",
+    "activatedAt": "2026-02-05T06:40:47.117Z",
+    "note": "TEST",
+    "createdAt": "2026-02-05T06:40:47.117Z",
+    "status": "pending"
+  }
+]

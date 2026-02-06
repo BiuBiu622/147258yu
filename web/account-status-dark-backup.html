@@ -1,0 +1,2099 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #0f1419; color: #e7e9ea; min-height: 100vh; }
+        
+        /* 导航栏 */
+        .navbar { background: #16202a; border-bottom: 1px solid #2f3b47; padding: 0 20px; position: sticky; top: 0; z-index: 100; }
+        .navbar-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+        .navbar-brand { font-size: 16px; font-weight: 600; color: #e7e9ea; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        .navbar-nav { display: flex; align-items: center; gap: 2px; }
+        .nav-link { color: #8b98a5; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; }
+        .nav-link:hover { background: #1d2a36; color: #e7e9ea; }
+        .nav-link.active { background: #1d9bf0; color: white; }
+        
+        .main-content { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* 通用头部 */
+        .page-header { background: #16202a; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; border: 1px solid #2f3b47; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .page-header h2 { font-size: 18px; color: #e7e9ea; }
+        .header-right { display: flex; gap: 12px; align-items: center; }
+        .stat-box { text-align: center; padding: 8px 16px; background: #1d2a36; border-radius: 6px; border: 1px solid #2f3b47; }
+        .stat-value { font-size: 20px; font-weight: bold; color: #1d9bf0; }
+        .stat-label { font-size: 11px; color: #71767b; margin-top: 2px; }
+        
+        /* 按钮 */
+        .btn { background: #1d9bf0; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; }
+        .btn:hover { background: #1a8cd8; }
+        .btn.success { background: #00ba7c; }
+        .btn.success:hover { background: #00a06a; }
+        .btn.secondary { background: #2f3b47; color: #e7e9ea; }
+        .btn.secondary:hover { background: #3d4f5f; }
+        .btn.danger { background: #f4212e; }
+        .btn.danger:hover { background: #dc1e28; }
+        
+        /* 表格 */
+        .table-container { background: #16202a; border-radius: 10px; border: 1px solid #2f3b47; overflow-x: auto; }
+        .status-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .status-table th { background: #1d2a36; padding: 12px 14px; text-align: center; font-weight: 500; color: #71767b; border-bottom: 1px solid #2f3b47; white-space: nowrap; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .status-table td { padding: 12px 14px; text-align: center; border-bottom: 1px solid #2f3b47; vertical-align: middle; }
+        .status-table tbody tr { transition: background 0.15s; }
+        .status-table tbody tr:hover { background: #1d2a36; }
+        .status-table tr.expanded { background: #1d2a36; }
+        .account-name-cell { font-weight: 600; color: #1d9bf0; text-align: left !important; padding-left: 16px !important; cursor: pointer; }
+        .account-name-cell:hover { text-decoration: underline; }
+        .expand-icon { margin-right: 6px; transition: transform 0.2s; display: inline-block; }
+        .expand-icon.open { transform: rotate(90deg); }
+        
+        /* 徽章 */
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+        .badge.success { background: rgba(0, 186, 124, 0.15); color: #00ba7c; }
+        .badge.danger { background: rgba(244, 33, 46, 0.15); color: #f4212e; }
+        .badge.warning { background: rgba(255, 212, 0, 0.15); color: #ffd400; }
+        .badge.gray { background: rgba(113, 118, 123, 0.2); color: #71767b; }
+        .badge.info { background: rgba(29, 155, 240, 0.15); color: #1d9bf0; }
+        
+        .time-cell { font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; color: #00ba7c; }
+        
+        /* 进度条 */
+        .progress-container { width: 80px; height: 20px; background: #2f3b47; border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-bar { height: 100%; border-radius: 10px; transition: width 0.3s ease; position: relative; }
+        .progress-bar.low { background: linear-gradient(90deg, #f4212e, #dc1e28); }
+        .progress-bar.medium { background: linear-gradient(90deg, #ffd400, #e6bf00); }
+        .progress-bar.high { background: linear-gradient(90deg, #1d9bf0, #1a8cd8); }
+        .progress-bar.complete { background: linear-gradient(90deg, #00ba7c, #00a06a); }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: 600; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5); z-index: 1; }
+        
+        /* 操作按钮 */
+        .action-btn { background: transparent; border: 1px solid #2f3b47; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 0 2px; transition: all 0.15s; color: #71767b; }
+        .action-btn:hover { background: #1d2a36; border-color: #3d4f5f; }
+        .action-btn.settings { color: #1d9bf0; border-color: rgba(29, 155, 240, 0.3); }
+        .action-btn.settings:hover { background: rgba(29, 155, 240, 0.1); border-color: #1d9bf0; }
+        
+        /* 展开详情行 */
+        .detail-row { display: none; }
+        .detail-row.show { display: table-row; }
+        .detail-row td { padding: 0; background: #1e3a4d; }
+        .detail-panel { padding: 16px 20px; border-left: 3px solid #1d9bf0; background: rgba(29, 155, 240, 0.08); }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        .detail-item { background: #253341; padding: 10px 14px; border-radius: 6px; text-align: center; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
+        .detail-item-label { font-size: 11px; color: #71767b; margin-bottom: 4px; }
+        .detail-item-value { font-size: 12px; font-weight: 500; line-height: 1.3; word-break: break-all; }
+        .detail-item-value .badge { font-size: 11px; padding: 3px 8px; line-height: 1.2; }
+        
+        /* 配置面板 */
+        .config-row { display: none; }
+        .config-row.show { display: table-row; }
+        .config-row td { padding: 0; background: #1d2a36; }
+        .config-panel { padding: 16px 20px; border-top: 2px solid #1d9bf0; background: #1d2a36; }
+        .config-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #2f3b47; }
+        .config-panel-title { font-size: 14px; font-weight: 500; color: #e7e9ea; }
+        .config-panel-actions { display: flex; gap: 8px; }
+        
+        .config-row-group { display: flex; flex-wrap: wrap; align-items: center; padding: 10px 14px; background: #253341; border-radius: 6px; margin-bottom: 6px; border: 1px solid #2f3b47; gap: 6px 16px; }
+        .config-row-title { font-size: 13px; font-weight: 500; color: #1d9bf0; min-width: 70px; display: flex; align-items: center; gap: 5px; }
+        .config-row-subtitle { font-size: 12px; font-weight: 400; color: #8b98a5; width: 100%; margin-top: 4px; padding-top: 6px; border-top: 1px dashed #2f3b47; }
+        .config-row-items { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; flex: 1; }
+        .config-inline-item { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #e7e9ea; white-space: nowrap; }
+        .config-inline-item .label { color: #8b98a5; }
+        .config-divider { width: 1px; height: 16px; background: #2f3b47; }
+        .merchant-tag { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; margin-right: 6px; }
+        .merchant-tag.green { color: #10b981; background: rgba(16,185,129,0.15); }
+        .merchant-tag.yellow { color: #f59e0b; background: rgba(245,158,11,0.15); }
+        .merchant-tag.red { color: #ef4444; background: rgba(239,68,68,0.15); }
+        
+        .simple-tasks-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 10px 14px; background: #253341; border-radius: 6px; margin-top: 6px; border: 1px solid #2f3b47; }
+        .simple-task-item { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+        .simple-task-label { color: #8b98a5; }
+        
+        /* 开关 */
+        .toggle-switch { position: relative; display: inline-block; width: 28px; height: 15px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3d4f5f; transition: 0.2s; border-radius: 15px; }
+        .slider:before { position: absolute; content: ""; height: 11px; width: 11px; left: 2px; bottom: 2px; background-color: #8b98a5; transition: 0.2s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00ba7c; }
+        input:checked + .slider:before { transform: translateX(13px); background-color: white; }
+        
+        /* 数字输入 */
+        .number-input-group { display: inline-flex; align-items: center; height: 24px; }
+        .number-input-group input { width: 32px; height: 24px; padding: 0; border: 1px solid #2f3b47; border-left: none; border-right: none; text-align: center; font-size: 12px; color: #e7e9ea; background: #253341; -moz-appearance: textfield; appearance: textfield; }
+        .number-input-group input::-webkit-outer-spin-button, .number-input-group input::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; }
+        .number-btn { width: 22px; height: 24px; border: 1px solid #2f3b47; background: #253341; color: #8b98a5; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .number-btn:hover { background: #2f3b47; color: #e7e9ea; }
+        .number-btn.decrease { border-radius: 4px 0 0 4px; }
+        .number-btn.increase { border-radius: 0 4px 4px 0; }
+        
+        /* 保存提示 */
+        .save-status { position: fixed; top: 60px; right: 20px; padding: 12px 20px; background: #00ba7c; color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; z-index: 1000; font-weight: 500; }
+        .save-status.show { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .no-data { text-align: center; padding: 60px 20px; color: #71767b; }
+        .no-data-icon { font-size: 48px; margin-bottom: 15px; }
+        .no-data-text { font-size: 16px; margin-bottom: 5px; color: #e7e9ea; }
+        .no-data-hint { font-size: 13px; }
+
+        /* BIN管理页面 */
+        .upload-area { background: #1d2a36; border: 2px dashed #2f3b47; border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 16px; }
+        .upload-area:hover { border-color: #1d9bf0; background: #253341; }
+        .upload-area.dragover { border-color: #1d9bf0; background: #253341; }
+        .upload-icon { font-size: 48px; margin-bottom: 10px; }
+        .upload-text { color: #e7e9ea; font-size: 15px; }
+        .upload-hint { color: #71767b; font-size: 13px; margin-top: 8px; }
+        
+        .file-list { background: #16202a; border-radius: 10px; padding: 20px; border: 1px solid #2f3b47; }
+        .file-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2f3b47; }
+        .file-list-header h3 { font-size: 15px; color: #e7e9ea; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #2f3b47; transition: background 0.2s; }
+        .file-item:hover { background: #1d2a36; }
+        .file-item:last-child { border-bottom: none; }
+        .file-info { flex: 1; }
+        .file-name { font-size: 14px; color: #e7e9ea; font-weight: 500; margin-bottom: 4px; }
+        .file-meta { font-size: 12px; color: #71767b; }
+        .file-actions { display: flex; gap: 8px; align-items: center; }
+        .hangup-label { font-size: 12px; color: #71767b; margin-right: 4px; }
+        
+        /* 日志页面 */
+        .log-container { background: #0d1117; border: 1px solid #2f3b47; border-radius: 8px; padding: 16px; height: 70vh; overflow-y: auto; font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; line-height: 1.6; }
+        .log-line { padding: 2px 0; white-space: pre-wrap; word-break: break-all; }
+        .log-line:hover { background: #161b22; }
+        .log-info { color: #58a6ff; }
+        .log-ok { color: #3fb950; }
+        .log-error { color: #f85149; }
+        .log-warn { color: #d29922; }
+        .timestamp { color: #6e7681; }
+        
+        /* 挂机日志页面 */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: linear-gradient(135deg, #1d9bf0 0%, #1a8cd8 100%); padding: 16px; border-radius: 8px; color: white; }
+        .stat-card.success { background: linear-gradient(135deg, #00ba7c 0%, #00a06a 100%); }
+        .stat-card.warning { background: linear-gradient(135deg, #ffd400 0%, #e6bf00 100%); color: #0f1419; }
+        .stat-card.danger { background: linear-gradient(135deg, #f4212e 0%, #dc1e28 100%); }
+        .stat-card .stat-label { font-size: 12px; opacity: 0.9; margin-bottom: 6px; }
+        .stat-card .stat-value { font-size: 28px; font-weight: 700; }
+        
+        .account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .account-card { background: #1d2a36; border-radius: 8px; padding: 14px; border-left: 3px solid #1d9bf0; }
+        .account-card.hangup-on { border-left-color: #00ba7c; }
+        .account-card.hangup-off { border-left-color: #71767b; }
+        .account-card-name { font-size: 14px; font-weight: 600; color: #e7e9ea; margin-bottom: 10px; }
+        .account-card-status { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+        .status-row { display: flex; justify-content: space-between; align-items: center; }
+        .status-row .label { color: #71767b; }
+        .status-row .value { color: #e7e9ea; }
+        .status-row .value.online { color: #00ba7c; }
+        .status-row .value.offline { color: #f4212e; }
+        .status-row .value.waiting { color: #ffd400; }
+        
+        input[type="file"] { display: none; }
+        
+        @media (max-width: 768px) {
+            .navbar-inner { flex-direction: column; height: auto; padding: 10px 0; gap: 10px; }
+            .navbar-nav { flex-wrap: wrap; justify-content: center; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .header-right { width: 100%; flex-wrap: wrap; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .account-grid { grid-template-columns: 1fr; }
+            .detail-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="/" class="navbar-brand">💎 游戏助手</a>
+            <div class="navbar-nav">
+                <div class="nav-link active" onclick="showPage('status')">📊 账号状态</div>
+                <div class="nav-link" onclick="showPage('tools')">🧰 工具箱</div>
+                <div class="nav-link" onclick="showPage('bin')">📁 BIN管理</div>
+                <div class="nav-link" onclick="showPage('logs')">📝 运行日志</div>
+                <div class="nav-link" onclick="showPage('hangup')">🎮 挂机日志</div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content">
+        <div class="save-status" id="saveStatus">✓ 保存成功</div>
+
+        <!-- 账号状态页 -->
+        <div id="page-status" class="page active">
+            <div class="page-header">
+                <h2>📊 账号状态监控</h2>
+                <div class="header-right">
+                    <div class="stat-box"><div class="stat-value" id="totalAccounts">0</div><div class="stat-label">总账号</div></div>
+                    <div class="stat-box"><div class="stat-value" id="withStatus">0</div><div class="stat-label">有状态</div></div>
+                    <button class="btn" onclick="loadStatusData()">🔄 刷新</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="status-table" id="statusTable">
+                    <thead><tr><th style="text-align:left;padding-left:16px;">账号</th><th>每日任务</th><th>盐罐</th><th>挂机</th><th>竞技场</th><th>操作</th></tr></thead>
+                    <tbody id="statusTableBody"><tr><td colspan="6"><div class="no-data"><div class="no-data-icon">⏳</div><div class="no-data-text">加载中...</div></div></td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- BIN管理页 -->
+        <div id="page-bin" class="page">
+            <div class="page-header"><h2>📁 BIN文件管理</h2></div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">点击或拖拽BIN文件到此处上传</div>
+                <div class="upload-hint">支持 .bin 格式文件，上传后自动转换Token</div>
+                <input type="file" id="fileInput" accept=".bin" multiple>
+            </div>
+            <div class="file-list">
+                <div class="file-list-header"><h3>文件列表</h3><button class="btn" onclick="loadBinFiles()">🔄 刷新</button></div>
+                <div id="fileListContent"><div class="no-data">加载中...</div></div>
+            </div>
+        </div>
+        
+        <!-- 运行日志页 -->
+        <div id="page-logs" class="page">
+            <div class="page-header">
+                <h2>📝 调度器日志</h2>
+                <div class="header-right">
+                    <button class="btn" id="autoLogBtn" onclick="toggleAutoLog()">🔄 自动刷新</button>
+                    <button class="btn secondary" onclick="loadLogs()">刷新</button>
+                </div>
+            </div>
+            <div class="log-container" id="logContainer"><div class="no-data">加载中...</div></div>
+        </div>
+        
+        <!-- 挂机日志页 -->
+        <div id="page-hangup" class="page">
+            <div class="page-header">
+                <h2>🎮 挂机状态</h2>
+                <div class="header-right">
+                    <button class="btn" id="autoHangupBtn" onclick="toggleAutoHangup()">🔄 自动刷新</button>
+                    <button class="btn secondary" onclick="loadHangupData()">刷新</button>
+                </div>
+            </div>
+            <div class="stats-grid" id="hangupStats">
+                <div class="stat-card"><div class="stat-label">总账号</div><div class="stat-value" id="hTotal">0</div></div>
+                <div class="stat-card success"><div class="stat-label">已启用</div><div class="stat-value" id="hEnabled">0</div></div>
+                <div class="stat-card warning"><div class="stat-label">在线中</div><div class="stat-value" id="hOnline">0</div></div>
+                <div class="stat-card danger"><div class="stat-label">离线</div><div class="stat-value" id="hOffline">0</div></div>
+            </div>
+            <div class="file-list" style="margin-bottom:16px;">
+                <div class="file-list-header"><h3>实时日志</h3></div>
+                <div class="log-container" id="hangupLogContainer" style="height:300px;"><div class="no-data">加载中...</div></div>
+            </div>
+            <div class="file-list">
+                <div class="file-list-header"><h3>账号状态</h3></div>
+                <div class="account-grid" id="hangupAccountGrid"><div class="no-data">加载中...</div></div>
+            </div>
+        </div>
+        
+        <!-- 工具箱页 -->
+        <div id="page-tools" class="page">
+            <iframe id="toolsFrame" src="tools.html" style="width:100%;height:calc(100vh - 70px);border:none;"></iframe>
+        </div>
+    </div>
+    <script>
+        // ==================== 部署配置区域 ====================
+        // 部署到服务器时，请根据实际情况修改以下配置
+        
+        // 方式1: 直接指定API服务器地址（推荐用于生产环境）
+        // const API_BASE = 'http://your-server-ip:3000';
+        
+        // 方式2: 使用相对路径（如果Web服务器代理了API请求）
+        // const API_BASE = '';  // 空字符串表示使用相对路径
+        
+        // 方式3: 动态获取（默认，适用于开发环境）
+        function getApiBase() {
+            // 如果你在HTML中设置了全局变量，优先使用
+            if (typeof window.API_BASE_URL !== 'undefined') {
+                return window.API_BASE_URL;
+            }
+            
+            // 根据当前页面的域名和端口自动判断
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            
+            // 如果Web页面在8080端口，API服务器通常在3000端口
+            if (port === '8080') {
+                return `http://${hostname}:3000`;
+            }
+            
+            // 默认使用3000端口
+            return `http://${hostname}:3000`;
+        }
+        
+        const API_BASE = getApiBase();
+        console.log('API基础路径:', API_BASE);
+        
+        // ==================== 应用代码 ====================
+        let currentConfig = null, statusData = {}, tokens = [], countdowns = {}, expandedAccount = null;
+        let autoLogInterval = null, autoHangupInterval = null, isAutoLog = false, isAutoHangup = false;
+        
+        // 页面切换
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (page === 'status') loadStatusData();
+            else if (page === 'bin') loadBinFiles();
+            else if (page === 'logs') loadLogs();
+            else if (page === 'hangup') loadHangupData();
+        }
+        
+        // 活动周计算
+        const 活动类型 = { 0: '黑市周', 1: '招募周', 2: '宝箱周' };
+        const 基准时间 = new Date('2025-11-21 12:00:00').getTime();
+        function 计算活动周开始时间(now) {
+            const d = new Date(now), w = d.getDay();
+            const fri = new Date(d); fri.setDate(d.getDate() + (w < 5 ? 5 - w : w === 5 ? 0 : 12 - w));
+            fri.setHours(12, 0, 0, 0);
+            if (d.getTime() < fri.getTime()) fri.setDate(fri.getDate() - 7);
+            return fri.getTime();
+        }
+        function 获取当前活动周类型() {
+            const start = 计算活动周开始时间(new Date());
+            const idx = Math.floor((start - 基准时间) / 604800000) % 3;
+            return 活动类型[idx >= 0 ? idx : idx + 3];
+        }
+        function formatShortTime(s) { 
+            if (!s || s <= 0) return '-'; 
+            const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s % 60; 
+            if (h > 0) return `${h}小时${m}分${sec}秒`;
+            if (m > 0) return `${m}分${sec}秒`;
+            return `${sec}秒`;
+        }
+        
+        // 账号状态页
+        async function loadStatusData() {
+            try {
+                const t = Date.now();
+                try { await fetch(`${API_BASE}/api/sync-accounts`, { method: 'POST' }); } catch(e) {}
+                const tokensRes = await fetch(`/data/tokens.json?t=${t}`);
+                if (!tokensRes.ok) throw new Error('未找到tokens.json');
+                tokens = await tokensRes.json();
+                try { const r = await fetch(`/data/account-status.json?t=${t}`); if (r.ok) statusData = await r.json(); } catch(e) {}
+                try { const r = await fetch(`/data/task-config.json?t=${t}`); if (r.ok) { 
+                    const fullConfig = await r.json(); 
+                    currentConfig = fullConfig.账号配置 || {}; 
+                    console.log('配置加载完成:', currentConfig);
+                } } catch(e) { console.warn('配置加载失败:', e); }
+                
+                // 加载任务调度记录，用于修正状态显示
+                let scheduleData = {};
+                try { 
+                    const r = await fetch(`/data/task-schedule-record.json?t=${t}`); 
+                    if (r.ok) scheduleData = await r.json(); 
+                } catch(e) {}
+                
+                // 修正BOSS战斗状态（从调度记录中获取真实状态）
+                if (scheduleData.BOSS战斗?.accounts) {
+                    Object.keys(statusData).forEach(accountName => {
+                        const scheduleRecord = scheduleData.BOSS战斗.accounts[accountName];
+                        if (scheduleRecord && scheduleRecord.lastStatus === 'success') {
+                            if (!statusData[accountName].BOSS战斗) {
+                                statusData[accountName].BOSS战斗 = {};
+                            }
+                            statusData[accountName].BOSS战斗.状态 = 'success';
+                            statusData[accountName].BOSS战斗.最后执行时间 = scheduleRecord.lastExecutionTime;
+                        }
+                    });
+                }
+                
+                // 清理所有现有的倒计时定时器
+                Object.keys(countdowns).forEach(k => { 
+                    if (countdowns[k]) {
+                        clearInterval(countdowns[k]); 
+                        delete countdowns[k];
+                    }
+                }); 
+                countdowns = {};
+                
+                renderStatusTable();
+                document.getElementById('totalAccounts').textContent = tokens.length;
+                document.getElementById('withStatus').textContent = Object.keys(statusData).length;
+            } catch (e) { 
+                document.getElementById('statusTableBody').innerHTML = `<tr><td colspan="6"><div class="no-data"><div class="no-data-icon">❌</div><div class="no-data-text">${e.message}</div></div></td></tr>`; 
+            }
+        }
+        
+        function renderStatusTable() {
+            const tbody = document.getElementById('statusTableBody');
+            if (!tokens.length) { 
+                tbody.innerHTML = `<tr><td colspan="6"><div class="no-data"><div class="no-data-icon">📭</div><div class="no-data-text">暂无账号</div></div></td></tr>`; 
+                return; 
+            }
+            let html = '';
+            tokens.forEach(t => { 
+                html += renderAccountRow(t.name, statusData[t.name]); 
+                html += renderDetailRow(t.name, statusData[t.name]);
+                html += renderConfigRow(t.name); 
+            });
+            tbody.innerHTML = html;
+            tokens.forEach(t => { if (statusData[t.name]) startCountdown(t.name, statusData[t.name]); });
+            if (expandedAccount) { 
+                const dr = document.getElementById(`detail-row-${expandedAccount}`);
+                const cr = document.getElementById(`config-row-${expandedAccount}`);
+                const row = document.getElementById(`data-row-${expandedAccount}`);
+                if (dr) dr.classList.add('show'); 
+                if (cr) cr.classList.add('show'); 
+                if (row) row.classList.add('expanded');
+            }
+        }
+        
+        function renderAccountRow(name, status) {
+            const now = Date.now() / 1000;
+            const dp = status?.dailyTask?.dailyPoint || 0;
+            const percentage = Math.min(100, (dp / 110) * 100);
+            let progressClass = 'low';
+            if (percentage >= 100) progressClass = 'complete';
+            else if (percentage >= 70) progressClass = 'high';
+            else if (percentage >= 40) progressClass = 'medium';
+            
+            const dailyCell = `<div class="progress-container">
+                <div class="progress-bar ${progressClass}" style="width: ${percentage}%"></div>
+                <div class="progress-text">${dp}/110</div>
+            </div>`;
+            
+            // 盐罐状态 - 显示剩余时间（倒计时）
+            const bottleHelper = status?.bottleHelper;
+            let bottleCell = '<span class="badge gray">未启动</span>';
+            if (bottleHelper) {
+                const hst = bottleHelper.helperStopTime || 0;
+                const isRunning = bottleHelper.isRunning || (hst > now);
+                if (isRunning && hst > now) {
+                    const remaining = Math.max(0, Math.floor(hst - now));
+                    bottleCell = `<span class="time-cell">🟢剩余<span id="bottle-${name}">${formatShortTime(remaining)}</span></span>`;
+                } else {
+                    bottleCell = '<span class="badge gray">已停止</span>';
+                }
+            }
+            
+            // 挂机状态 - 显示已挂机时长（正计时）
+            const hangUp = status?.hangUp;
+            let hangUpCell = '<span class="badge gray">未挂机</span>';
+            if (hangUp) {
+                const lastTime = hangUp.lastTime || 0;
+                const hangUpTime = hangUp.hangUpTime || 0;
+                if (lastTime > 0) {
+                    const elapsedTime = Math.floor(now - lastTime);
+                    if (hangUpTime > 0) {
+                        const remainingTime = Math.max(0, Math.floor(hangUpTime - (now - lastTime)));
+                        if (remainingTime > 0) {
+                            // 还在挂机中，显示已挂机时长
+                            hangUpCell = `<span class="time-cell">🟢已挂<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>`;
+                        } else {
+                            // 挂机已完成
+                            hangUpCell = '<span class="badge warning">已完成</span>';
+                        }
+                    } else {
+                        // 无限挂机，显示已挂机时长
+                        hangUpCell = `<span class="time-cell">🟢已挂<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>`;
+                    }
+                } else {
+                    hangUpCell = '<span class="badge gray">未挂机</span>';
+                }
+            }
+            
+            const as = status?.arena?.status || 'pending', asc = status?.arena?.successCount || 0;
+            let arenaBadge = '<span class="badge gray">-</span>';
+            if (as === 'success') arenaBadge = `<span class="badge success">${asc}/3✓</span>`;
+            else if (as === 'partial') arenaBadge = `<span class="badge warning">${asc}/3</span>`;
+            else if (as === 'failed') arenaBadge = `<span class="badge danger">${asc}/3</span>`;
+            
+            return `<tr id="data-row-${name}" class="${expandedAccount===name?'expanded':''}">
+                <td class="account-name-cell" onclick="toggleDetail('${name}')">
+                    <span class="expand-icon ${expandedAccount===name?'open':''}">▶</span>${name}
+                </td>
+                <td>${dailyCell}</td>
+                <td>${bottleCell}</td>
+                <td>${hangUpCell}</td>
+                <td>${arenaBadge}</td>
+                <td>
+                    <button class="action-btn settings" onclick="toggleConfig('${name}')">⚙️</button>
+                    <button class="action-btn" onclick="openTools('${name}')" title="工具箱">🧰</button>
+                </td>
+            </tr>`;
+        }
+        
+        function renderDetailRow(name, status) {
+            if (!status) {
+                return `<tr id="detail-row-${name}" class="detail-row ${expandedAccount===name?'show':''}">
+                    <td colspan="6">
+                        <div class="detail-panel">
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-item-label">签到</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">咸将塔</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">答题</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">赛车</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">竞技场</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">四圣碎片</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">每日咸王</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">灯神</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">BOSS战斗</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">梦境</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">宝库</div>
+                                    <div class="detail-item-value">${(() => {
+                                        const 今天周几 = new Date().getDay();
+                                        return (今天周几 === 1 || 今天周几 === 2) 
+                                            ? '<span class="badge gray">非开放</span>' 
+                                            : '<span class="badge gray">未开启</span>';
+                                    })()}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">活动周</div>
+                                    <div class="detail-item-value"><span class="badge gray">无数据</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+            }
+            
+            // 签到状态 - 详细信息
+            const signinBadge = status.signin?.isSignedIn ? 
+                '<span class="badge success">✓已签到</span>' : 
+                '<span class="badge gray">未签到</span>';
+            
+            // 俱乐部签到状态
+            const clubSigninBadge = status.clubSignin?.isSignedIn ? 
+                '<span class="badge success">✓已签到</span>' : 
+                '<span class="badge gray">未签到</span>';
+            
+            // 挂机奖励状态
+            const hangupRewardBadge = status.hangupReward?.isCollected ? 
+                '<span class="badge success">✓已领取</span>' : 
+                '<span class="badge gray">未领取</span>';
+            
+            // 咸鱼大冲关状态
+            const rushBadge = status.rush?.isCompleted ? 
+                '<span class="badge success">✓已完成</span>' : 
+                '<span class="badge gray">未完成</span>';
+            
+            // 咸将塔状态 - 详细战斗信息
+            const tower = status.tower;
+            let towerBadge = '<span class="badge gray">未挑战</span>';
+            if (tower) {
+                const tc = tower.today?.challengeCount || 0;
+                const sc = tower.today?.successCount || 0;
+                const fc = tower.today?.failCount || 0;
+                const towerId = tower.towerId || 0;
+                
+                // 格式化层数：towerId转换为层数-关卡格式
+                let currentFloor = '-';
+                if (towerId > 0) {
+                    const 层数 = Math.floor(towerId / 10) + 1;
+                    const 关卡 = towerId % 10;
+                    currentFloor = `${层数}-${关卡}`;
+                }
+                
+                if (tc > 0) {
+                    const successRate = tc > 0 ? Math.round((sc / tc) * 100) : 0;
+                    towerBadge = `<span class="badge info">${currentFloor}层<br/>${tc}战${sc}胜${fc}败(${successRate}%)</span>`;
+                } else if (towerId > 0) {
+                    towerBadge = `<span class="badge info">${currentFloor}层<br/>(今日未挑战)</span>`;
+                }
+            }
+            
+            // 答题状态 - 详细分数信息
+            const study = status.study;
+            let studyBadge = '<span class="badge gray">未答题</span>';
+            if (study?.hasAnswered) {
+                const score = study.score || 0;
+                const maxScore = study.maxCorrectNum || 0;
+                studyBadge = `<span class="badge success">${score}分<br/>(最高${maxScore}题)</span>`;
+            }
+            
+            // 赛车状态 - 详细参与信息
+            const carKing = status.carKing;
+            let carBadge = '<span class="badge gray">未参与</span>';
+            if (carKing?.hasPlayed) {
+                const cd = carKing.已执行日期 || [];
+                const totalDays = ['周一', '周二', '周三'];
+                const completedDays = cd.length;
+                const isComplete = totalDays.every(day => cd.includes(day));
+                
+                if (isComplete) {
+                    carBadge = '<span class="badge success">✓全周完成<br/>(3/3天)</span>';
+                } else if (completedDays > 0) {
+                    carBadge = `<span class="badge warning">部分完成<br/>(${completedDays}/3天)</span>`;
+                }
+            }
+            
+            // 四圣碎片状态 - 详细购买信息
+            const legion = status.legionShop;
+            let legionBadge = '<span class="badge gray">未购买</span>';
+            if (legion) {
+                const state = legion.显示状态 || legion.状态 || '';
+                const buyDate = legion.购买日期;
+                const error = legion.错误信息;
+                
+                if (state === 'purchased') {
+                    const dateStr = buyDate ? new Date(buyDate).toLocaleDateString('zh-CN', {month:'numeric',day:'numeric'}) : '';
+                    legionBadge = `<span class="badge success">✓已购买<br/>${dateStr}</span>`;
+                } else if (state === 'insufficient') {
+                    legionBadge = '<span class="badge warning">碎片不足</span>';
+                } else if (state === 'failed') {
+                    legionBadge = `<span class="badge danger">购买失败</span>`;
+                } else if (state === 'pending') {
+                    legionBadge = '<span class="badge info">待购买</span>';
+                }
+            }
+            
+            // 每日咸王状态 - 详细执行信息
+            const king = status.每日咸王;
+            let kingBadge = '<span class="badge gray">未参与</span>';
+            if (king) {
+                const state = king.状态 || '';
+                const execCount = king.执行次数 || 0;
+                const successCount = king.成功次数 || 0;
+                const lastTime = king.最后执行时间;
+                const error = king.错误信息;
+                
+                if (state === 'success') {
+                    kingBadge = `<span class="badge success">✓完成<br/>(${successCount}/${execCount}次)</span>`;
+                } else if (state === 'failed') {
+                    const errorMsg = error ? `<br/>(${error.substring(0, 10)}...)` : '';
+                    kingBadge = `<span class="badge danger">失败<br/>(${successCount}/${execCount}次)${errorMsg}</span>`;
+                } else if (state === 'pending') {
+                    kingBadge = '<span class="badge info">待执行</span>';
+                }
+            }
+            
+            // 灯神状态
+            const genie = status.灯神;
+            let genieBadge = '<span class="badge gray">未参与</span>';
+            if (genie) {
+                const state = genie.状态 || '';
+                const lastTime = genie.最后执行时间;
+                
+                if (state === 'success') {
+                    genieBadge = '<span class="badge success">✓完成</span>';
+                } else if (state === 'failed') {
+                    genieBadge = '<span class="badge danger">失败</span>';
+                } else if (state === 'pending') {
+                    genieBadge = '<span class="badge info">待执行</span>';
+                }
+            }
+            
+            // BOSS战斗状态
+            const boss = status.BOSS战斗;
+            let bossBadge = '<span class="badge gray">未参与</span>';
+            if (boss) {
+                const state = boss.状态 || '';
+                const lastTime = boss.最后执行时间;
+                
+                if (state === 'success') {
+                    bossBadge = '<span class="badge success">✓完成</span>';
+                } else if (state === 'failed') {
+                    bossBadge = '<span class="badge danger">失败</span>';
+                } else if (state === 'pending') {
+                    bossBadge = '<span class="badge info">待执行</span>';
+                }
+            }
+            
+            // 梦境状态
+            const dream = status.梦境;
+            let dreamBadge = '<span class="badge gray">未参与</span>';
+            if (dream) {
+                const state = dream.状态 || '';
+                const lastTime = dream.最后执行时间;
+                
+                if (state === 'success') {
+                    dreamBadge = '<span class="badge success">✓完成</span>';
+                } else if (state === 'failed') {
+                    dreamBadge = '<span class="badge danger">失败</span>';
+                } else if (state === 'pending') {
+                    dreamBadge = '<span class="badge info">待执行</span>';
+                }
+            }
+            
+            // 宝库状态（周任务，周三至周日开放）
+            const baoku = status.宝库;
+            let baokuBadge = '';
+            const 今天周几 = new Date().getDay();
+            const 是宝库开放日 = (今天周几 !== 1 && 今天周几 !== 2);
+            
+            if (!是宝库开放日) {
+                baokuBadge = '<span class="badge gray">非开放</span>';
+            } else if (!baoku || !baoku.最后执行时间) {
+                // 检查任务是否启用
+                const baokuConfig = currentConfig?.[name]?.宝库;
+                if (!baokuConfig?.启用) {
+                    baokuBadge = '<span class="badge gray">未开启</span>';
+                } else {
+                    baokuBadge = '<span class="badge info">未执行</span>';
+                }
+            } else {
+                // 检查是否本周已执行（从周三开始算）
+                const lastTime = new Date(baoku.最后执行时间);
+                const now = new Date();
+                const 本周三 = new Date(now);
+                本周三.setHours(0, 0, 0, 0);
+                const 距离周三天数 = 今天周几 >= 3 ? 今天周几 - 3 : 今天周几 + 4;
+                本周三.setDate(now.getDate() - 距离周三天数);
+                
+                if (lastTime >= 本周三) {
+                    baokuBadge = '<span class="badge success">✓已执行</span>';
+                } else {
+                    const baokuConfig = currentConfig?.[name]?.宝库;
+                    if (!baokuConfig?.启用) {
+                        baokuBadge = '<span class="badge gray">未开启</span>';
+                    } else {
+                        baokuBadge = '<span class="badge info">未执行</span>';
+                    }
+                }
+            }
+            
+            // 钓鱼月度进度
+            const fishMonthConfig = currentConfig?.[name]?.每日任务?.钓鱼月度补齐;
+            let fishMonthBadge = '';
+            if (fishMonthConfig === true) {
+                const fishMonth = status.钓鱼月度;
+                if (fishMonth?.当前进度 !== undefined) {
+                    const progress = fishMonth.当前进度;
+                    const target = fishMonth.目标进度 || 320;
+                    const shouldBe = fishMonth.应达进度 || 0;
+                    const percent = Math.round((progress / target) * 100);
+                    if (progress >= shouldBe) {
+                        fishMonthBadge = `<span class="badge success">✓${progress}/${target}</span>`;
+                    } else {
+                        fishMonthBadge = `<span class="badge warning">${progress}/${target} (${percent}%)</span>`;
+                    }
+                } else {
+                    fishMonthBadge = '<span class="badge info">待检测</span>';
+                }
+            } else {
+                fishMonthBadge = '<span class="badge gray">未开启</span>';
+            }
+            
+            // 竞技场月度进度
+            const arenaMonthConfig = currentConfig?.[name]?.竞技场?.月度补齐;
+            let arenaMonthBadge = '';
+            if (arenaMonthConfig === true) {
+                const arenaMonth = status.arena;
+                if (arenaMonth?.月度进度 !== undefined) {
+                    const progress = arenaMonth.月度进度;
+                    const target = arenaMonth.月度目标 || 240;
+                    const shouldBe = arenaMonth.月度应达 || 0;
+                    const percent = Math.round((progress / target) * 100);
+                    if (progress >= shouldBe) {
+                        arenaMonthBadge = `<span class="badge success">✓${progress}/${target}</span>`;
+                    } else {
+                        arenaMonthBadge = `<span class="badge warning">${progress}/${target} (${percent}%)</span>`;
+                    }
+                } else {
+                    arenaMonthBadge = '<span class="badge info">待检测</span>';
+                }
+            } else {
+                arenaMonthBadge = '<span class="badge gray">未开启</span>';
+            }
+            
+            // 竞技场状态 - 详细战斗信息
+            const arena = status.arena;
+            let arenaBadge = '<span class="badge gray">未参与</span>';
+            if (arena) {
+                const successCount = arena.successCount || 0;
+                const attemptCount = arena.attemptCount || 0;
+                const arenaStatus = arena.status || 'pending';
+                const lastTime = arena.lastExecuteTime;
+                
+                if (arenaStatus === 'success') {
+                    arenaBadge = `<span class="badge success">✓完成<br/>(${successCount}/3胜)</span>`;
+                } else if (arenaStatus === 'partial') {
+                    arenaBadge = `<span class="badge warning">进行中<br/>(${successCount}/3胜)</span>`;
+                } else if (arenaStatus === 'failed') {
+                    arenaBadge = `<span class="badge danger">失败<br/>(${successCount}/3胜)</span>`;
+                } else if (arenaStatus === 'pending') {
+                    arenaBadge = '<span class="badge info">待执行</span>';
+                }
+            }
+            
+            // 活动周状态 - 详细活动信息
+            const awt = 获取当前活动周类型();
+            let actBadge = '<span class="badge gray">未参与</span>';
+            if (awt === '黑市周') {
+                const bm = status.blackMarketWeek;
+                if (bm?.购买日期) {
+                    const buyTime = new Date(bm.购买日期);
+                    const weekStart = 计算活动周开始时间(new Date());
+                    if (buyTime.getTime() >= weekStart) {
+                        actBadge = `<span class="badge success">✓已购买 ${buyTime.toLocaleDateString()}</span>`;
+                    } else {
+                        actBadge = '<span class="badge warning">本周未购买</span>';
+                    }
+                } else {
+                    actBadge = '<span class="badge warning">待购买</span>';
+                }
+            } else if (awt === '招募周') {
+                actBadge = '<span class="badge info">招募周 (暂无数据)</span>';
+            } else if (awt === '宝箱周') {
+                actBadge = '<span class="badge info">宝箱周 (暂无数据)</span>';
+            }
+            
+            return `<tr id="detail-row-${name}" class="detail-row ${expandedAccount===name?'show':''}">
+                <td colspan="6">
+                    <div class="detail-panel">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">签到</div>
+                                <div class="detail-item-value">${signinBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">咸将塔</div>
+                                <div class="detail-item-value">${towerBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">答题</div>
+                                <div class="detail-item-value">${studyBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">挂机奖励</div>
+                                <div class="detail-item-value">${hangupRewardBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">赛车</div>
+                                <div class="detail-item-value">${carBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">咸鱼大冲关</div>
+                                <div class="detail-item-value">${rushBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">竞技场</div>
+                                <div class="detail-item-value">${arenaBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">四圣碎片</div>
+                                <div class="detail-item-value">${legionBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">每日咸王</div>
+                                <div class="detail-item-value">${kingBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">灯神</div>
+                                <div class="detail-item-value">${genieBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">BOSS战斗</div>
+                                <div class="detail-item-value">${bossBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">梦境</div>
+                                <div class="detail-item-value">${dreamBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">宝库</div>
+                                <div class="detail-item-value">${baokuBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">🎣钓鱼月度</div>
+                                <div class="detail-item-value">${fishMonthBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">⚔️竞技场月度</div>
+                                <div class="detail-item-value">${arenaMonthBadge}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">${awt}</div>
+                                <div class="detail-item-value">${actBadge}</div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>`;
+        }
+        
+        function renderConfigRow(name) {
+            const config = currentConfig?.[name] || {};
+            return `<tr id="config-row-${name}" class="config-row">
+                <td colspan="6">
+                    <div class="config-panel">
+                        <div class="config-panel-header">
+                            <div class="config-panel-title">⚙️ ${name} - 任务配置</div>
+                            <div class="config-panel-actions">
+                                <button class="btn secondary" onclick="toggleConfig('${name}')">✕</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 账号总开关 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">🎯 账号总开关</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">启用:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '启用', null, this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 每日任务组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">📋 每日任务</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">每日任务:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.每日任务?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 每日任务子选项 -->
+                        <div class="simple-tasks-row">
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">付费招募:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.付费招募 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '付费招募', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">领取挂机奖励:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.领取挂机奖励 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '领取挂机奖励', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">开启宝箱:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.开启宝箱 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '开启宝箱', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">领取盐罐:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.领取盐罐 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '领取盐罐', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">领取邮件:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.领取邮件 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '领取邮件', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">黑市购买:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.黑市购买 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '黑市购买', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">购买清单:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.购买清单 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '购买清单', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">手动购买:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.手动购买 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '手动购买', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">🎣钓鱼月度补齐:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日任务?.钓鱼月度补齐 === true ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日任务', '钓鱼月度补齐', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 竞技场组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">⚔️ 竞技场</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">竞技场:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.竞技场?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '竞技场', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">月度补齐:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.竞技场?.月度补齐 === true ? 'checked' : ''} onchange="updateNestedConfig('${name}', '竞技场', '月度补齐', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">竞技场阵容:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', '竞技场', '竞技场阵容', -1)">-</button>
+                                        <input type="number" value="${config.竞技场?.竞技场阵容 || 1}" min="1" max="5" onchange="updateNestedConfig('${name}', '竞技场', '竞技场阵容', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', '竞技场', '竞技场阵容', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">战斗次数:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', '竞技场', '战斗次数', -1)">-</button>
+                                        <input type="number" value="${config.竞技场?.战斗次数 || 3}" min="1" max="10" onchange="updateNestedConfig('${name}', '竞技场', '战斗次数', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', '竞技场', '战斗次数', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOSS战斗组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">👹 BOSS战斗</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">BOSS战斗:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.BOSS战斗?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', 'BOSS战斗', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">BOSS阵容:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', 'BOSS战斗', 'BOSS阵容', -1)">-</button>
+                                        <input type="number" value="${config.BOSS战斗?.BOSS阵容 || 1}" min="1" max="5" onchange="updateNestedConfig('${name}', 'BOSS战斗', 'BOSS阵容', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', 'BOSS战斗', 'BOSS阵容', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">战斗次数:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', 'BOSS战斗', '战斗次数', -1)">-</button>
+                                        <input type="number" value="${config.BOSS战斗?.战斗次数 || 2}" min="1" max="10" onchange="updateNestedConfig('${name}', 'BOSS战斗', '战斗次数', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', 'BOSS战斗', '战斗次数', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 其他任务组 -->
+                        <div class="simple-tasks-row">
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">挂机奖励:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.挂机奖励?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '挂机奖励', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">盐罐机器:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.盐罐机器?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '盐罐机器', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">咸鱼大冲关:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.咸鱼大冲关?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '咸鱼大冲关', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">疯狂赛车:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.疯狂赛车?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '疯狂赛车', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">俱乐部签到:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.俱乐部签到?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '俱乐部签到', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">军团商店购买:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.军团商店购买?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '军团商店购买', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">每日咸王:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.每日咸王?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '每日咸王', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">灯神:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.灯神?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '灯神', '启用', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 梦境组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">🌙 梦境</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">梦境:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">梦境阵容:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', '梦境', '梦境阵容', -1)">-</button>
+                                        <input type="number" value="${config.梦境?.梦境阵容 || 1}" min="1" max="5" onchange="updateNestedConfig('${name}', '梦境', '梦境阵容', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', '梦境', '梦境阵容', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">自动战斗:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.自动战斗 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '自动战斗', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- 初级商人 -->
+                            <div class="config-row-items" style="width:100%; margin-top:6px;">
+                                <span class="merchant-tag green">🟢 初级</span>
+                                <div class="config-inline-item">
+                                    <span class="label">挑战票:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.初级_挑战票 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '初级_挑战票', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">咸神火把:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.初级_咸神火把 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '初级_咸神火把', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">宝箱:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.初级_宝箱 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '初级_宝箱', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- 中级商人 -->
+                            <div class="config-row-items" style="width:100%; margin-top:4px;">
+                                <span class="merchant-tag yellow">🟡 中级</span>
+                                <div class="config-inline-item">
+                                    <span class="label">梦魇晶石:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.中级_梦魇晶石 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '中级_梦魇晶石', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">黄金鱼竿:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.中级_黄金鱼竿 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '中级_黄金鱼竿', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">招募令:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.中级_招募令 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '中级_招募令', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">宝箱:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.中级_宝箱 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '中级_宝箱', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">将魂碎片:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.中级_将魂碎片 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '中级_将魂碎片', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- 高级商人 -->
+                            <div class="config-row-items" style="width:100%; margin-top:4px;">
+                                <span class="merchant-tag red">🔴 高级</span>
+                                <div class="config-inline-item">
+                                    <span class="label">梦魇晶石:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.高级_梦魇晶石 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '高级_梦魇晶石', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">黄金鱼竿:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.高级_黄金鱼竿 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '高级_黄金鱼竿', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">招募令:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.高级_招募令 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '高级_招募令', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">宝箱:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.高级_宝箱 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '高级_宝箱', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">将魂碎片:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.梦境?.高级_将魂碎片 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '梦境', '高级_将魂碎片', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 黑市周购买组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">🛒 黑市周购买</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">黑市周购买:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.黑市周购买?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '黑市周购买', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 黑市周购买子选项 -->
+                        <div class="simple-tasks-row">
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">购买宝箱:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.黑市周购买?.购买宝箱 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '黑市周购买', '购买宝箱', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">购买金鱼杆:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.黑市周购买?.购买金鱼杆 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '黑市周购买', '购买金鱼杆', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">购买贝壳:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.黑市周购买?.购买贝壳 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '黑市周购买', '购买贝壳', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="simple-task-item">
+                                <span class="simple-task-label">购买白玉:</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${config.黑市周购买?.购买白玉 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '黑市周购买', '购买白玉', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 宝库组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">🏰 宝库</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">宝库:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.宝库?.启用 ? 'checked' : ''} onchange="updateNestedConfig('${name}', '宝库', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">前三层:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.宝库?.前三层 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '宝库', '前三层', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">四五层:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.宝库?.四五层 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '宝库', '四五层', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 咸将塔组 -->
+                        <div class="config-row-group">
+                            <div class="config-row-title">🗼 咸将塔</div>
+                            <div class="config-row-items">
+                                <div class="config-inline-item">
+                                    <span class="label">咸将塔:</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.咸将塔?.启用 !== false ? 'checked' : ''} onchange="updateNestedConfig('${name}', '咸将塔', '启用', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">爬塔阵容:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', '咸将塔', '爬塔阵容', -1)">-</button>
+                                        <input type="number" value="${config.咸将塔?.爬塔阵容 || 1}" min="1" max="5" onchange="updateNestedConfig('${name}', '咸将塔', '爬塔阵容', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', '咸将塔', '爬塔阵容', 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="config-inline-item">
+                                    <span class="label">最大小鱼干数:</span>
+                                    <div class="number-input-group">
+                                        <button class="number-btn decrease" onclick="adjustNestedNumber('${name}', '咸将塔', '最大小鱼干数', -1)">-</button>
+                                        <input type="number" value="${config.咸将塔?.最大小鱼干数 || 10}" min="1" max="50" onchange="updateNestedConfig('${name}', '咸将塔', '最大小鱼干数', parseInt(this.value))">
+                                        <button class="number-btn increase" onclick="adjustNestedNumber('${name}', '咸将塔', '最大小鱼干数', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>`;
+        }
+        
+        function toggleDetail(name) {
+            const detailRow = document.getElementById(`detail-row-${name}`);
+            const dataRow = document.getElementById(`data-row-${name}`);
+            const expandIcon = dataRow.querySelector('.expand-icon');
+            
+            if (expandedAccount === name) {
+                expandedAccount = null;
+                detailRow.classList.remove('show');
+                dataRow.classList.remove('expanded');
+                expandIcon.classList.remove('open');
+            } else {
+                if (expandedAccount) {
+                    const prevDetail = document.getElementById(`detail-row-${expandedAccount}`);
+                    const prevData = document.getElementById(`data-row-${expandedAccount}`);
+                    const prevIcon = prevData.querySelector('.expand-icon');
+                    if (prevDetail) prevDetail.classList.remove('show');
+                    if (prevData) prevData.classList.remove('expanded');
+                    if (prevIcon) prevIcon.classList.remove('open');
+                }
+                expandedAccount = name;
+                detailRow.classList.add('show');
+                dataRow.classList.add('expanded');
+                expandIcon.classList.add('open');
+            }
+        }
+        
+        function openTools(name) {
+            // 切换到工具箱页面，并传递账号参数
+            showPage('tools');
+            const frame = document.getElementById('toolsFrame');
+            frame.src = 'tools.html?account=' + encodeURIComponent(name);
+        }
+        
+        function toggleConfig(name) {
+            const configRow = document.getElementById(`config-row-${name}`);
+            const detailRow = document.getElementById(`detail-row-${name}`);
+            const isVisible = configRow.classList.contains('show');
+            
+            if (isVisible) {
+                configRow.classList.remove('show');
+            } else {
+                // 关闭其他账号的配置面板
+                document.querySelectorAll('.config-row.show').forEach(row => {
+                    row.classList.remove('show');
+                });
+                
+                // 显示当前配置面板
+                configRow.classList.add('show');
+                
+                // 如果详情面板没有展开，不要自动展开
+                // 保持详情面板和配置面板独立
+            }
+        }
+        
+        function updateConfig(name, key, value) {
+            if (!currentConfig) currentConfig = {};
+            if (!currentConfig[name]) currentConfig[name] = {};
+            currentConfig[name][key] = value;
+        }
+        
+        function updateNestedConfig(name, taskName, key, value) {
+            if (!currentConfig) currentConfig = {};
+            if (!currentConfig[name]) currentConfig[name] = {};
+            
+            // 处理账号总开关（key为null的情况）
+            if (key === null) {
+                currentConfig[name][taskName] = value;
+            } else {
+                // 处理嵌套任务配置
+                if (!currentConfig[name][taskName]) currentConfig[name][taskName] = {};
+                currentConfig[name][taskName][key] = value;
+            }
+            
+            // 自动保存
+            autoSaveConfig(name);
+        }
+        
+        // 防抖保存（避免频繁保存）
+        let saveTimers = {};
+        function autoSaveConfig(name) {
+            if (saveTimers[name]) {
+                clearTimeout(saveTimers[name]);
+            }
+            saveTimers[name] = setTimeout(() => {
+                saveAccountConfig(name);
+            }, 500); // 500ms 防抖
+        }
+        
+        function adjustNumber(name, key, delta) {
+            const current = currentConfig?.[name]?.[key] || 8;
+            const newValue = Math.max(1, Math.min(24, current + delta));
+            updateConfig(name, key, newValue);
+            const input = document.querySelector(`#config-row-${name} input[type="number"]`);
+            if (input) input.value = newValue;
+        }
+        
+        function adjustNestedNumber(name, taskName, key, delta) {
+            const current = currentConfig?.[name]?.[taskName]?.[key] || getDefaultValue(key);
+            const { min, max } = getValueRange(key);
+            const newValue = Math.max(min, Math.min(max, current + delta));
+            updateNestedConfig(name, taskName, key, newValue);
+            
+            // 更新对应的输入框
+            const configRow = document.getElementById(`config-row-${name}`);
+            if (configRow) {
+                const inputs = configRow.querySelectorAll('input[type="number"]');
+                inputs.forEach(input => {
+                    if (parseInt(input.value) === current) {
+                        input.value = newValue;
+                    }
+                });
+            }
+        }
+        
+        function getDefaultValue(key) {
+            const defaults = {
+                '时长': 8,
+                '竞技场阵容': 1,
+                '战斗次数': 3,
+                'BOSS阵容': 1,
+                '梦境阵容': 1,
+                '爬塔阵容': 1,
+                '最大小鱼干数': 10
+            };
+            return defaults[key] || 1;
+        }
+        
+        function getValueRange(key) {
+            const ranges = {
+                '时长': { min: 1, max: 24 },
+                '竞技场阵容': { min: 1, max: 5 },
+                '战斗次数': { min: 1, max: 10 },
+                'BOSS阵容': { min: 1, max: 5 },
+                '梦境阵容': { min: 1, max: 5 },
+                '爬塔阵容': { min: 1, max: 5 },
+                '最大小鱼干数': { min: 1, max: 50 }
+            };
+            return ranges[key] || { min: 1, max: 10 };
+        }
+        
+        async function saveAccountConfig(name) {
+            try {
+                // 读取当前完整配置
+                const response = await fetch(`/data/task-config.json?t=${Date.now()}`);
+                let fullConfig = {};
+                if (response.ok) {
+                    fullConfig = await response.json();
+                }
+                
+                // 更新指定账号的配置
+                if (!fullConfig.账号配置) fullConfig.账号配置 = {};
+                fullConfig.账号配置[name] = currentConfig[name];
+                
+                // 保存完整配置
+                const saveResponse = await fetch(`${API_BASE}/api/save-config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fullConfig)
+                });
+                
+                const result = await saveResponse.json();
+                if (result.success) {
+                    showSaveStatus();
+                    console.log(`✓ ${name} 配置保存成功`);
+                } else {
+                    throw new Error(result.message || '保存失败');
+                }
+            } catch (e) {
+                console.error('保存配置失败:', e);
+                alert('保存配置失败: ' + e.message);
+            }
+        }
+        
+        function showSaveStatus() {
+            const status = document.getElementById('saveStatus');
+            status.classList.add('show');
+            setTimeout(() => status.classList.remove('show'), 2000);
+        }
+        
+        function startCountdown(name, status) {
+            const now = Date.now() / 1000;
+            
+            // 盐罐倒计时 - 显示剩余时间（递减）
+            const bottleHelper = status?.bottleHelper;
+            if (bottleHelper) {
+                const hst = bottleHelper.helperStopTime || 0;
+                const isRunning = bottleHelper.isRunning || (hst > now);
+                if (isRunning && hst > now) {
+                    // 立即更新一次
+                    const elem = document.getElementById(`bottle-${name}`);
+                    if (elem) {
+                        const remaining = Math.floor(hst - Date.now() / 1000);
+                        elem.textContent = formatShortTime(remaining);
+                    }
+                    
+                    // 设置倒计时定时器（递减）
+                    countdowns[`bottle-${name}`] = setInterval(() => {
+                        const elem = document.getElementById(`bottle-${name}`);
+                        if (elem) {
+                            const remaining = Math.floor(hst - Date.now() / 1000);
+                            if (remaining > 0) {
+                                elem.textContent = formatShortTime(remaining);
+                            } else {
+                                elem.parentElement.innerHTML = '<span class="badge gray">已停止</span>';
+                                clearInterval(countdowns[`bottle-${name}`]);
+                                delete countdowns[`bottle-${name}`];
+                            }
+                        } else {
+                            clearInterval(countdowns[`bottle-${name}`]);
+                            delete countdowns[`bottle-${name}`];
+                        }
+                    }, 1000);
+                }
+            }
+            
+            // 挂机正计时 - 显示已挂机时长（递增）
+            const hangUp = status?.hangUp;
+            if (hangUp) {
+                const lastTime = hangUp.lastTime || 0;
+                const hangUpTime = hangUp.hangUpTime || 0;
+                if (lastTime > 0) {
+                    // 立即更新一次
+                    const elem = document.getElementById(`hangup-${name}`);
+                    if (elem) {
+                        const elapsedTime = Math.floor(Date.now() / 1000 - lastTime);
+                        elem.textContent = formatShortTime(elapsedTime);
+                    }
+                    
+                    // 设置正计时定时器（递增）
+                    countdowns[`hangup-${name}`] = setInterval(() => {
+                        const elem = document.getElementById(`hangup-${name}`);
+                        if (elem) {
+                            const currentTime = Date.now() / 1000;
+                            const elapsedTime = Math.floor(currentTime - lastTime);
+                            
+                            // 检查是否还在挂机中
+                            if (hangUpTime > 0) {
+                                const remainingTime = Math.max(0, Math.floor(hangUpTime - (currentTime - lastTime)));
+                                if (remainingTime > 0) {
+                                    // 还在挂机中，显示已挂机时长（递增）
+                                    elem.textContent = formatShortTime(elapsedTime);
+                                } else {
+                                    // 挂机完成
+                                    elem.parentElement.innerHTML = '<span class="badge warning">已完成</span>';
+                                    clearInterval(countdowns[`hangup-${name}`]);
+                                    delete countdowns[`hangup-${name}`];
+                                }
+                            } else {
+                                // 无限挂机，持续显示已挂机时长（递增）
+                                elem.textContent = formatShortTime(elapsedTime);
+                            }
+                        } else {
+                            clearInterval(countdowns[`hangup-${name}`]);
+                            delete countdowns[`hangup-${name}`];
+                        }
+                    }, 1000);
+                }
+            }
+        }
+        
+        // BIN管理页
+        async function loadBinFiles() {
+            try {
+                console.log('开始加载BIN文件列表...');
+                const response = await fetch(`${API_BASE}/api/bin-files`);
+                console.log('文件列表响应状态:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                console.log('响应内容类型:', contentType);
+                
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.log('非JSON响应:', text);
+                    try {
+                        data = JSON.parse(text);
+                    } catch (parseError) {
+                        throw new Error(`服务器响应格式错误: ${text}`);
+                    }
+                }
+                
+                console.log('解析后的数据:', data);
+                const container = document.getElementById('fileListContent');
+                
+                if (!data.success) {
+                    container.innerHTML = '<div class="no-data"><div class="no-data-icon">❌</div><div class="no-data-text">加载失败: ' + (data.message || '未知错误') + '</div></div>';
+                    return;
+                }
+                
+                const files = data.files || [];
+                console.log('文件列表:', files);
+                
+                if (!files.length) {
+                    container.innerHTML = '<div class="no-data"><div class="no-data-icon">📁</div><div class="no-data-text">暂无BIN文件</div></div>';
+                    return;
+                }
+                
+                // 获取挂机配置状态
+                let hangupConfig = {};
+                try {
+                    console.log('获取挂机配置...');
+                    const hangupResponse = await fetch(`${API_BASE}/api/hangup-config`);
+                    const hangupData = await hangupResponse.json();
+                    console.log('挂机配置数据:', hangupData);
+                    if (hangupData.success) {
+                        hangupConfig = hangupData.config || {};
+                    }
+                } catch (e) {
+                    console.warn('获取挂机配置失败:', e);
+                }
+                
+                let html = '';
+                files.forEach(file => {
+                    console.log('处理文件:', file);
+                    
+                    // 从文件名中提取账号名称（去掉.bin后缀）
+                    const accountName = file.name.replace(/\.bin$/i, '');
+                    const isEnabled = hangupConfig[accountName] === true;
+                    console.log(`文件 ${file.name} -> 账号: ${accountName}, 挂机启用: ${isEnabled}`);
+                    
+                    // 所有BIN文件都显示挂机开关
+                    const hangupToggle = `<span class="hangup-label">挂机:</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleHangup('${file.name}', this.checked)">
+                            <span class="slider"></span>
+                        </label>`;
+                    
+                    html += `<div class="file-item">
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-meta">大小: ${(file.size / 1024).toFixed(1)}KB | 创建时间: ${new Date(file.created).toLocaleString()}</div>
+                        </div>
+                        <div class="file-actions">
+                            ${hangupToggle}
+                            <button class="btn danger" onclick="deleteBinFile('${file.name}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+                console.log('✓ BIN文件列表加载完成，共', files.length, '个文件');
+            } catch (e) {
+                console.error('加载BIN文件失败:', e);
+                document.getElementById('fileListContent').innerHTML = '<div class="no-data"><div class="no-data-icon">❌</div><div class="no-data-text">加载失败: ' + e.message + '</div></div>';
+            }
+        }
+        
+        async function deleteBinFile(filename) {
+            if (!confirm(`确定要删除 ${filename} 吗？`)) return;
+            try {
+                console.log(`开始删除 ${filename}...`);
+                const response = await fetch(`${API_BASE}/api/delete-bin/${encodeURIComponent(filename)}`, { 
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('删除响应状态:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                console.log('响应内容类型:', contentType);
+                
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.log('非JSON响应:', text);
+                    try {
+                        data = JSON.parse(text);
+                    } catch (parseError) {
+                        throw new Error(`服务器响应格式错误: ${text}`);
+                    }
+                }
+                
+                console.log('解析后的数据:', data);
+                
+                if (data.success) {
+                    console.log(`✓ ${filename} 删除成功:`, data.message);
+                    alert(`✓ ${filename} 删除成功！`);
+                    // 延迟刷新，确保后端处理完成
+                    setTimeout(() => {
+                        loadBinFiles();
+                    }, 1000);
+                } else {
+                    throw new Error(data.message || '删除失败');
+                }
+            } catch (e) {
+                console.error('删除文件失败:', e);
+                alert('删除文件失败: ' + e.message);
+            }
+        }
+        
+        async function toggleHangup(filename, enabled) {
+            try {
+                console.log(`切换挂机状态: ${filename} -> ${enabled}`);
+                // 从文件名中提取账号名称（去掉.bin后缀）
+                let accountName = filename.replace(/\.bin$/i, '');
+                console.log(`提取的账号名称: ${accountName}`);
+                
+                const response = await fetch(`${API_BASE}/api/hangup-config/${encodeURIComponent(accountName)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                
+                console.log('挂机配置响应状态:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('挂机配置响应数据:', data);
+                
+                if (!data.success) {
+                    throw new Error(data.message || '操作失败');
+                }
+                
+                console.log(`✓ ${accountName} 挂机${enabled ? '开启' : '关闭'}成功`);
+                // 可选：显示成功提示
+                // alert(`${accountName} 挂机${enabled ? '开启' : '关闭'}成功`);
+            } catch (e) {
+                console.error('挂机设置失败:', e);
+                alert('挂机设置失败: ' + e.message);
+                // 恢复开关状态
+                const checkbox = event.target;
+                if (checkbox) {
+                    checkbox.checked = !enabled;
+                }
+            }
+        }
+        
+        // 文件上传
+        document.getElementById('uploadArea').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        
+        // 拖拽上传
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileUpload({ target: { files: e.dataTransfer.files } });
+        });
+        
+        async function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+            
+            for (const file of files) {
+                if (!file.name.endsWith('.bin')) {
+                    alert(`${file.name} 不是BIN文件`);
+                    continue;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    console.log(`开始上传 ${file.name}...`);
+                    const response = await fetch(`${API_BASE}/api/upload-bin`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('上传响应状态:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const contentType = response.headers.get('content-type');
+                    console.log('响应内容类型:', contentType);
+                    
+                    let data;
+                    if (contentType && contentType.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const text = await response.text();
+                        console.log('非JSON响应:', text);
+                        try {
+                            data = JSON.parse(text);
+                        } catch (parseError) {
+                            throw new Error(`服务器响应格式错误: ${text}`);
+                        }
+                    }
+                    
+                    console.log('解析后的数据:', data);
+                    
+                    if (data.success) {
+                        console.log(`✓ ${file.name} 上传成功:`, data.message);
+                        alert(`✓ ${file.name} 上传成功！`);
+                    } else {
+                        throw new Error(data.message || '上传失败');
+                    }
+                } catch (e) {
+                    console.error(`上传 ${file.name} 失败:`, e);
+                    alert(`上传 ${file.name} 失败: ${e.message}`);
+                }
+            }
+            
+            // 延迟刷新，确保后端处理完成
+            setTimeout(() => {
+                loadBinFiles();
+            }, 1000);
+            document.getElementById('fileInput').value = '';
+        }
+        
+        // 日志页
+        async function loadLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/api/logs`);
+                const result = await response.json();
+                const container = document.getElementById('logContainer');
+                
+                if (!result.success || !result.logs || !result.logs.trim()) {
+                    container.innerHTML = '<div class="no-data"><div class="no-data-icon">📝</div><div class="no-data-text">暂无日志</div></div>';
+                    return;
+                }
+                
+                const lines = result.logs.split('\n').slice(-500); // 最近500行
+                let html = '';
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    let className = 'log-line';
+                    if (line.includes('[INFO]')) className += ' log-info';
+                    else if (line.includes('[OK]')) className += ' log-ok';
+                    else if (line.includes('[ERROR]')) className += ' log-error';
+                    else if (line.includes('[WARN]')) className += ' log-warn';
+                    
+                    // 转义HTML特殊字符
+                    const escapedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    html += `<div class="${className}">${escapedLine}</div>`;
+                });
+                
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                console.error('加载日志失败:', e);
+                document.getElementById('logContainer').innerHTML = '<div class="no-data"><div class="no-data-icon">❌</div><div class="no-data-text">加载日志失败</div></div>';
+            }
+        }
+        
+        function toggleAutoLog() {
+            const btn = document.getElementById('autoLogBtn');
+            if (isAutoLog) {
+                clearInterval(autoLogInterval);
+                isAutoLog = false;
+                btn.textContent = '🔄 自动刷新';
+                btn.classList.remove('success');
+            } else {
+                autoLogInterval = setInterval(loadLogs, 3000);
+                isAutoLog = true;
+                btn.textContent = '⏸️ 停止刷新';
+                btn.classList.add('success');
+                loadLogs();
+            }
+        }
+        
+        // 挂机日志页
+        async function loadHangupData() {
+            try {
+                const [statusRes, logsRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/hangup-status`),
+                    fetch(`${API_BASE}/api/hangup-logs`)
+                ]);
+                
+                const status = await statusRes.json();
+                const logsResult = await logsRes.json();
+                const logs = logsResult.logs || '';
+                
+                // 更新统计 - 从data.stats获取
+                const stats = status.data?.stats || {};
+                document.getElementById('hTotal').textContent = stats.total || 0;
+                document.getElementById('hEnabled').textContent = stats.enabled || 0;
+                document.getElementById('hOnline').textContent = stats.online || 0;
+                document.getElementById('hOffline').textContent = stats.offline || 0;
+                
+                // 更新日志
+                const logContainer = document.getElementById('hangupLogContainer');
+                if (logs.trim()) {
+                    const lines = logs.split('\n').slice(-100);
+                    let html = '';
+                    lines.forEach(line => {
+                        if (!line.trim()) return;
+                        let className = 'log-line';
+                        if (line.includes('上线')) className += ' log-ok';
+                        else if (line.includes('离线') || line.includes('断开')) className += ' log-error';
+                        else if (line.includes('连接')) className += ' log-info';
+                        // 转义HTML特殊字符
+                        const escapedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        html += `<div class="${className}">${escapedLine}</div>`;
+                    });
+                    logContainer.innerHTML = html;
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                } else {
+                    logContainer.innerHTML = '<div class="no-data">暂无挂机日志</div>';
+                }
+                
+                // 更新账号网格 - 从data.accounts获取
+                const grid = document.getElementById('hangupAccountGrid');
+                const accounts = status.data?.accounts || [];
+                if (accounts.length) {
+                    let html = '';
+                    accounts.forEach(acc => {
+                        const cardClass = acc.hangupEnabled ? (acc.windowExists ? 'hangup-on' : 'hangup-off') : 'hangup-off';
+                        const statusText = acc.windowExists ? '在线' : (acc.waitingLogin ? `等待${acc.waitingMinutes}分钟` : '离线');
+                        const statusClass = acc.windowExists ? 'online' : (acc.waitingLogin ? 'waiting' : 'offline');
+                        
+                        html += `<div class="account-card ${cardClass}">
+                            <div class="account-card-name">${acc.accountName}</div>
+                            <div class="account-card-status">
+                                <div class="status-row">
+                                    <span class="label">挂机状态:</span>
+                                    <span class="value">${acc.hangupEnabled ? '已启用' : '已禁用'}</span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">窗口状态:</span>
+                                    <span class="value ${statusClass}">${statusText}</span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="label">最后任务:</span>
+                                    <span class="value">${acc.lastTaskTime || '-'}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                    grid.innerHTML = html;
+                } else {
+                    grid.innerHTML = '<div class="no-data">暂无挂机账号</div>';
+                }
+            } catch (e) {
+                console.error('加载挂机数据失败:', e);
+            }
+        }
+        
+        function toggleAutoHangup() {
+            const btn = document.getElementById('autoHangupBtn');
+            if (isAutoHangup) {
+                clearInterval(autoHangupInterval);
+                isAutoHangup = false;
+                btn.textContent = '🔄 自动刷新';
+                btn.classList.remove('success');
+            } else {
+                autoHangupInterval = setInterval(loadHangupData, 5000);
+                isAutoHangup = true;
+                btn.textContent = '⏸️ 停止刷新';
+                btn.classList.add('success');
+                loadHangupData();
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatusData();
+        });
+    </script>
+</body>
+</html>
