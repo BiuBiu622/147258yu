@@ -1,6 +1,0 @@
-# 删除任务执行记录
-del data\task-schedule-record.json
-del data\execution-record.json
-
-# 然后重启
-pm2 restart all
