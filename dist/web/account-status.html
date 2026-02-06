@@ -669,6 +669,12 @@
         function formatShortTime(s) {
             if (!s || s <= 0) return '-';
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                if (h > 0) return `${h}h${m}m`;
+                if (m > 0) return `${m}m${sec}s`;
+                return `${sec}s`;
+            }
             if (h > 0) return `${h}小时${m}分${sec}秒`;
             if (m > 0) return `${m}分${sec}秒`;
             return `${sec}秒`;
@@ -749,7 +755,9 @@
                 const hst = bottleHelper.helperStopTime || 0;
                 const isRunning = bottleHelper.isRunning || (hst > now);
                 if (isRunning && hst > now) {
-                    bottleCell = `<span class="time-cell">🟢剩余<span id="bottle-${name}">${formatShortTime(Math.floor(hst - now))}</span></span>`;
+                    const timeStr = formatShortTime(Math.floor(hst - now));
+                    const isMobile = window.innerWidth <= 768;
+                    bottleCell = `<span class="time-cell">🟢${isMobile ? '' : '剩余'}<span id="bottle-${name}">${timeStr}</span></span>`;
                 } else {
                     bottleCell = '<span class="badge gray">已停止</span>';
                 }
@@ -762,9 +770,11 @@
                 const elapsedTime = Math.floor(now - lastTime);
                 if (hangUpTime > 0) {
                     const remainingTime = Math.max(0, Math.floor(hangUpTime - (now - lastTime)));
-                    hangUpCell = remainingTime > 0 ? `<span class="time-cell">🟢已挂<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>` : '<span class="badge warning">已完成</span>';
+                    const isMobile = window.innerWidth <= 768;
+                    hangUpCell = remainingTime > 0 ? `<span class="time-cell">🟢${isMobile ? '' : '已挂'}<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>` : '<span class="badge warning">已完成</span>';
                 } else {
-                    hangUpCell = `<span class="time-cell">🟢已挂<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>`;
+                    const isMobile = window.innerWidth <= 768;
+                    hangUpCell = `<span class="time-cell">🟢${isMobile ? '' : '已挂'}<span id="hangup-${name}">${formatShortTime(elapsedTime)}</span></span>`;
                 }
             }
 
