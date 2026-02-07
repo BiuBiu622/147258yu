@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,14 +11,14 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             background: #1e1e1e;
             color: #d4d4d4;
             padding: 20px;
         }
-        
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -27,18 +28,18 @@
             background: #252526;
             border-radius: 5px;
         }
-        
+
         .title {
             font-size: 18px;
             font-weight: bold;
             color: #fff;
         }
-        
+
         .controls {
             display: flex;
             gap: 10px;
         }
-        
+
         button {
             padding: 8px 16px;
             border: none;
@@ -47,38 +48,64 @@
             font-size: 14px;
             transition: all 0.3s;
         }
-        
+
         .btn-refresh {
             background: #0e639c;
             color: white;
         }
-        
+
         .btn-refresh:hover {
             background: #1177bb;
         }
-        
+
         .btn-clear {
             background: #d73a49;
             color: white;
         }
-        
+
         .btn-clear:hover {
             background: #cb2431;
         }
-        
+
         .btn-auto {
             background: #28a745;
             color: white;
         }
-        
+
         .btn-auto:hover {
             background: #218838;
         }
-        
+
         .btn-auto.active {
             background: #218838;
         }
-        
+
+        .btn-scheduler {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-scheduler:hover {
+            background: #059669;
+        }
+
+        .btn-scheduler.paused {
+            background: #ef4444;
+        }
+
+        .btn-scheduler.paused:hover {
+            background: #dc2626;
+        }
+
+        .btn-restart {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-restart:hover {
+            background: #d97706;
+        }
+
         .log-container {
             background: #1e1e1e;
             border: 1px solid #3e3e42;
@@ -89,93 +116,93 @@
             font-size: 13px;
             line-height: 1.6;
         }
-        
+
         .log-line {
             padding: 2px 0;
             white-space: pre-wrap;
             word-break: break-all;
         }
-        
+
         .log-line:hover {
             background: #2d2d30;
         }
-        
+
         .log-info {
             color: #569cd6;
         }
-        
+
         .log-ok {
             color: #4ec9b0;
         }
-        
+
         .log-error {
             color: #f48771;
         }
-        
+
         .log-warn {
             color: #dcdcaa;
         }
-        
+
         .timestamp {
             color: #858585;
         }
-        
+
         .empty {
             text-align: center;
             color: #858585;
             padding: 50px;
         }
-        
+
         ::-webkit-scrollbar {
             width: 10px;
         }
-        
+
         ::-webkit-scrollbar-track {
             background: #1e1e1e;
         }
-        
+
         ::-webkit-scrollbar-thumb {
             background: #424242;
             border-radius: 5px;
         }
-        
+
         ::-webkit-scrollbar-thumb:hover {
             background: #4e4e4e;
         }
-        
+
         /* 移动端适配 */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
-            
+
             .header {
                 flex-direction: column;
                 gap: 10px;
                 padding: 12px;
             }
-            
+
             .title {
                 font-size: 16px;
             }
-            
+
             .controls {
                 width: 100%;
                 flex-direction: column;
             }
-            
+
             button {
                 width: 100%;
                 padding: 10px;
             }
-            
+
             .log-container {
                 height: calc(100vh - 200px);
                 padding: 10px;
                 font-size: 11px;
             }
         }
-        
+
         @media (max-width: 480px) {
             .log-container {
                 font-size: 10px;
@@ -183,31 +210,114 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <div class="title">📝 调度器实时日志</div>
         <div class="controls">
+            <button class="btn-scheduler" onclick="toggleScheduler()" id="schedulerBtn">▶️ 运行中</button>
+            <button class="btn-restart" onclick="restartScheduler()" id="restartBtn">🔄 重启调度器</button>
             <button class="btn-auto active" onclick="toggleAuto()">🔄 自动刷新</button>
             <button class="btn-refresh" onclick="loadLogs()">🔃 手动刷新</button>
             <button class="btn-clear" onclick="clearLogs()">🗑️ 清空显示</button>
         </div>
     </div>
-    
+
     <div class="log-container" id="logContainer">
         <div class="empty">正在加载日志...</div>
     </div>
-    
+
     <script>
         const API_BASE = `http://${window.location.hostname}:3000`;
         let autoRefresh = true;
         let refreshInterval = null;
-        
+        let schedulerPaused = false;
+
+        // ===== 调度器控制功能 =====
+
+        // 获取调度器状态
+        async function getSchedulerStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/api/scheduler/status`);
+                const data = await res.json();
+                if (data.success) {
+                    schedulerPaused = data.paused || false;
+                    updateSchedulerUI();
+                }
+            } catch (error) {
+                console.error('获取调度器状态失败:', error);
+            }
+        }
+
+        // 切换调度器状态
+        async function toggleScheduler() {
+            const btn = document.getElementById('schedulerBtn');
+            btn.disabled = true;
+
+            try {
+                const url = schedulerPaused ? `${API_BASE}/api/scheduler/resume` : `${API_BASE}/api/scheduler/pause`;
+                const res = await fetch(url, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    schedulerPaused = data.paused;
+                    updateSchedulerUI();
+                    console.log(data.message);
+                } else {
+                    alert('操作失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('切换调度器状态失败:', error);
+                alert('操作失败: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 更新调度器按钮UI
+        function updateSchedulerUI() {
+            const btn = document.getElementById('schedulerBtn');
+
+            if (schedulerPaused) {
+                btn.classList.add('paused');
+                btn.textContent = '⏸️ 已暂停';
+            } else {
+                btn.classList.remove('paused');
+                btn.textContent = '▶️ 运行中';
+            }
+        }
+
+        async function restartScheduler() {
+            if (!confirm('确定要重启调度器吗？当前正在执行的任务会被中断。')) return;
+            const btn = document.getElementById('restartBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 重启中...';
+            try {
+                const res = await fetch(`${API_BASE}/api/scheduler/restart`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('调度器重启指令已发送！');
+                    setTimeout(() => getSchedulerStatus(), 2000);
+                } else {
+                    alert('重启失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('重启调度器失败:', error);
+                alert('重启失败: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 重启调度器';
+            }
+        }
+
         // 加载日志
         async function loadLogs() {
             try {
                 const response = await fetch(`${API_BASE}/api/logs`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     displayLogs(result.logs);
                 } else {
@@ -217,22 +327,22 @@
                 showError('连接失败: ' + error.message);
             }
         }
-        
+
         // 显示日志
         function displayLogs(logs) {
             const container = document.getElementById('logContainer');
-            
+
             if (!logs || logs.trim() === '') {
                 container.innerHTML = '<div class="empty">暂无日志</div>';
                 return;
             }
-            
+
             const lines = logs.split('\n').filter(line => line.trim());
-            
+
             let html = '';
             lines.forEach(line => {
                 let className = 'log-line';
-                
+
                 if (line.includes('[INFO]')) {
                     className += ' log-info';
                 } else if (line.includes('[OK]')) {
@@ -242,36 +352,36 @@
                 } else if (line.includes('[WARN]')) {
                     className += ' log-warn';
                 }
-                
+
                 // 高亮时间戳
                 line = line.replace(/\[(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2})\]/, '<span class="timestamp">[$1]</span>');
-                
+
                 html += `<div class="${className}">${line}</div>`;
             });
-            
+
             container.innerHTML = html;
-            
+
             // 滚动到底部
             container.scrollTop = container.scrollHeight;
         }
-        
+
         // 显示错误
         function showError(message) {
             const container = document.getElementById('logContainer');
             container.innerHTML = `<div class="empty log-error">${message}</div>`;
         }
-        
+
         // 清空显示
         function clearLogs() {
             const container = document.getElementById('logContainer');
             container.innerHTML = '<div class="empty">日志已清空</div>';
         }
-        
+
         // 切换自动刷新
         function toggleAuto() {
             autoRefresh = !autoRefresh;
             const btn = document.querySelector('.btn-auto');
-            
+
             if (autoRefresh) {
                 btn.classList.add('active');
                 btn.textContent = '🔄 自动刷新';
@@ -282,17 +392,17 @@
                 stopAutoRefresh();
             }
         }
-        
+
         // 开始自动刷新
         function startAutoRefresh() {
             if (refreshInterval) {
                 clearInterval(refreshInterval);
             }
-            
+
             loadLogs(); // 立即加载一次
             refreshInterval = setInterval(loadLogs, 3000); // 每3秒刷新
         }
-        
+
         // 停止自动刷新
         function stopAutoRefresh() {
             if (refreshInterval) {
@@ -300,16 +410,18 @@
                 refreshInterval = null;
             }
         }
-        
+
         // 页面加载时启动
         window.addEventListener('load', () => {
+            getSchedulerStatus();  // 获取调度器状态
             startAutoRefresh();
         });
-        
+
         // 页面卸载时清理
         window.addEventListener('beforeunload', () => {
             stopAutoRefresh();
         });
     </script>
 </body>
+
 </html>
