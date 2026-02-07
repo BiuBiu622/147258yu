@@ -1,7 +1,0 @@
-{
-  "启用自动登录": true,
-  "游戏EXE路径": "C:\\Program Files\\slatshark\\鲨鱼之王客户端.exe",
-  "检测间隔秒": 30,
-  "可挂机阈值分钟": 20,
-  "AutoHotkey路径": "C:\\Program Files\\AutoHotkey\\AutoHotkey.exe"
-}
