@@ -161,6 +161,7 @@
                         <div class="stat-value" id="withStatus">0</div>
                         <div class="stat-label">有状态</div>
                     </div>
+                    <button class="btn" style="background:#8b5cf6;" onclick="openBatchConfigModal()">⚡ 批量配置</button>
                     <button class="btn" onclick="loadStatusData()">🔄 刷新</button>
                 </div>
             </div>
@@ -601,6 +602,82 @@
             padding: 2px 0;
         }
 
+        /* 批量配置相关样式 */
+        .batch-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .batch-switch.all-on .slider {
+            background-color: #10b981;
+        }
+
+        .batch-switch.all-off .slider {
+            background-color: #ccc;
+        }
+
+        .batch-switch.partial .slider {
+            background-color: #f59e0b;
+        }
+
+        .batch-switch.all-on .slider:before {
+            transform: translateX(16px);
+        }
+
+        .batch-switch.partial .slider:before {
+            transform: translateX(8px);
+            border-radius: 4px;
+            height: 4px;
+            width: 12px;
+            top: 8px;
+            left: 2px;
+        }
+
+        .account-select-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .account-select-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .account-select-item:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .account-select-item input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         /* 响应式 */
         @media (max-width: 700px) {
             .config-modal {
@@ -637,6 +714,49 @@
                 <button class="config-modal-close" onclick="closeConfigModal()">✕</button>
             </div>
             <div class="config-modal-body" id="configModalBody"></div>
+        </div>
+    </div>
+
+    <!-- 批量配置弹窗容器 -->
+    <div class="config-modal-overlay" id="batchConfigModal" onclick="closeBatchConfigModal(event)">
+        <div class="config-modal" onclick="event.stopPropagation()">
+            <div class="config-modal-header">
+                <span class="config-modal-title">⚡ 批量任务配置</span>
+                <button class="config-modal-close" onclick="closeBatchConfigModal()">✕</button>
+            </div>
+            <div class="config-modal-body" id="batchConfigModalBody"></div>
+            <div class="modal-footer" style="justify-content: center; padding: 15px;">
+                <span style="color: #64748b; font-size: 13px;">点击任意开关以选择要应用该配置的账号</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 账号选择子弹窗 -->
+    <div class="config-modal-overlay" id="accountSelectModal" onclick="closeAccountSelectModal(event)"
+        style="z-index: 10001;">
+        <div class="config-modal" style="max-width: 500px;" onclick="event.stopPropagation()">
+            <div class="config-modal-header">
+                <span class="config-modal-title" id="accountSelectTitle">选择账号</span>
+                <button class="config-modal-close" onclick="closeAccountSelectModal()">✕</button>
+            </div>
+            <div class="config-modal-body" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div style="font-size: 14px; color: #64748b;" id="accountSelectDesc">请选择要开启的账号</div>
+                    <div>
+                        <button class="btn" style="padding: 4px 10px; font-size: 12px; margin-right: 8px;"
+                            onclick="toggleAllAccountSelect(true)">全选</button>
+                        <button class="btn"
+                            style="padding: 4px 10px; font-size: 12px; background: #fff; color: #64748b; border: 1px solid #cbd5e1;"
+                            onclick="toggleAllAccountSelect(false)">全不选</button>
+                    </div>
+                </div>
+                <div class="account-select-grid" id="accountSelectGrid"></div>
+                <div class="modal-footer" style="justify-content: flex-end; gap: 10px;">
+                    <button class="btn" style="background: #fff; color: #64748b; border: 1px solid #cbd5e1;"
+                        onclick="closeAccountSelectModal()">取消</button>
+                    <button class="btn" id="batchSaveBtn" onclick="applyAccountSelect()">💾 保存并应用</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1167,6 +1287,7 @@
                         <div class="config-grid cols-3">
                             ${item('挂机奖励', sw('挂机奖励', '启用', c.挂机奖励?.启用 !== false))}
                             ${item('盐罐机器', sw('盐罐机器', '启用', c.盐罐机器?.启用 !== false))}
+                            ${item('领取残卷', sw('盐罐机器', '领取残卷', c.盐罐机器?.领取残卷 === true))}
                             ${item('咸鱼冲关', sw('咸鱼大冲关', '启用', c.咸鱼大冲关?.启用 !== false))}
                             ${item('疯狂赛车', sw('疯狂赛车', '启用', c.疯狂赛车?.启用 !== false))}
                             ${item('俱乐部签到', sw('俱乐部签到', '启用', c.俱乐部签到?.启用 !== false))}
@@ -1238,6 +1359,319 @@
             document.body.style.overflow = '';
             currentConfigAccount = null;
         }
+
+        // ==================== 批量配置功能 ====================
+        let currentBatchTask = null;
+        let currentBatchKey = null;
+        let selectedAccountsForBatch = new Set();
+        let enabledAccounts = [];
+
+        function getEnabledAccounts() {
+            return tokens.map(t => t.name).filter(name => currentConfig?.[name]?.启用 !== false);
+        }
+
+        // 获取某项配置在所有启用账号中的状态
+        function getBatchSwitchState(task, key) {
+            const accs = getEnabledAccounts();
+            if (accs.length === 0) return 'all-off';
+
+            let onCount = 0;
+            accs.forEach(name => {
+                const checked = key === null
+                    ? (currentConfig?.[name]?.[task] !== false && currentConfig?.[name]?.[task]?.启用 !== false)
+                    : (currentConfig?.[name]?.[task]?.[key] === true || (currentConfig?.[name]?.[task]?.[key] !== false && key !== '钓鱼月度补齐' && key !== '月度补齐' && key !== '领取残卷' && !key.startsWith('初级_') && !key.startsWith('中级_') && !key.startsWith('高级_')));
+                if (checked) onCount++;
+            });
+
+            if (onCount === 0) return 'all-off';
+            if (onCount === accs.length) return 'all-on';
+            return 'partial';
+        }
+
+        function renderBatchConfigContent() {
+            const sw = (task, key) => {
+                const state = getBatchSwitchState(task, key);
+                return `<div class="batch-switch ${state}" onclick="openAccountSelect('${task}', '${key}')"><span class="slider"></span></div>`;
+            };
+            const swRoot = (key) => sw(key, null);
+            // 批量配置暂不支持数值输入，只支持开关
+            const num = (task, key) => `<span style="font-size:10px;color:#94a3b8;border:1px solid #e2e8f0;padding:2px 4px;border-radius:4px;">需要单账号配置</span>`;
+            const item = (label, ctrl) => `<div class="cfg-item"><span>${label}</span>${ctrl}</div>`;
+
+            // 复用单账号配置面板的结构，但替换了 sw 函数
+            return `<div class="config-content">
+                <!-- 第1行：每日任务 + 竞技场 + BOSS战斗 -->
+                <div class="config-row">
+                    <div class="config-section wider">
+                        <div class="config-section-header">
+                            <span class="config-section-title">📋 每日任务</span>
+                            ${sw('每日任务', '启用')}
+                        </div>
+                        <div class="config-grid cols-3">
+                            ${item('付费招募', sw('每日任务', '付费招募'))}
+                            ${item('领取挂机', sw('每日任务', '领取挂机奖励'))}
+                            ${item('开启宝箱', sw('每日任务', '开启宝箱'))}
+                            ${item('领取盐罐', sw('每日任务', '领取盐罐'))}
+                            ${item('领取邮件', sw('每日任务', '领取邮件'))}
+                            ${item('黑市购买', sw('每日任务', '黑市购买'))}
+                            ${item('购买清单', sw('每日任务', '购买清单'))}
+                            ${item('手动购买', sw('每日任务', '手动购买'))}
+                            ${item('🎣钓鱼月度', sw('每日任务', '钓鱼月度补齐'))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">⚔️ 竞技场</span>
+                            ${sw('竞技场', '启用')}
+                        </div>
+                        <div class="config-grid cols-1">
+                            ${item('月度补齐', sw('竞技场', '月度补齐'))}
+                            ${item('阵容', num('竞技场', '竞技场阵容'))}
+                            ${item('战斗次数', num('竞技场', '战斗次数'))}
+                        </div>
+                    </div>
+                    <div class="config-section narrow">
+                        <div class="config-section-header">
+                            <span class="config-section-title">👹 BOSS战斗</span>
+                            ${sw('BOSS战斗', '启用')}
+                        </div>
+                        <div class="config-grid cols-1">
+                            ${item('阵容', num('BOSS战斗', 'BOSS阵容'))}
+                            ${item('战斗次数', num('BOSS战斗', '战斗次数'))}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第2行：咸将塔 + 黑市周 + 其他简单任务 -->
+                <div class="config-row">
+                    <div class="config-section narrow">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🗼 咸将塔</span>
+                            ${sw('咸将塔', '启用')}
+                        </div>
+                        <div class="config-grid cols-1">
+                            ${item('阵容', num('咸将塔', '爬塔阵容'))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🛒 黑市周购买</span>
+                            ${sw('黑市周购买', '启用')}
+                        </div>
+                        <div class="config-grid">
+                            ${item('宝箱', sw('黑市周购买', '购买宝箱'))}
+                            ${item('金鱼杆', sw('黑市周购买', '购买金鱼杆'))}
+                            ${item('贝壳', sw('黑市周购买', '购买贝壳'))}
+                            ${item('白玉', sw('黑市周购买', '购买白玉'))}
+                        </div>
+                    </div>
+                    <div class="config-section wider">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🎮 其他任务</span>
+                        </div>
+                        <div class="config-grid cols-3">
+                            ${item('挂机奖励', sw('挂机奖励', '启用'))}
+                            ${item('盐罐机器', sw('盐罐机器', '启用'))}
+                            ${item('领取残卷', sw('盐罐机器', '领取残卷'))}
+                            ${item('咸鱼冲关', sw('咸鱼大冲关', '启用'))}
+                            ${item('疯狂赛车', sw('疯狂赛车', '启用'))}
+                            ${item('俱乐部签到', sw('俱乐部签到', '启用'))}
+                            ${item('军团商店', sw('军团商店购买', '启用'))}
+                            ${item('每日咸王', sw('每日咸王', '启用'))}
+                            ${item('灯神', sw('灯神', '启用'))}
+                            ${item('宝库', sw('宝库', '启用'))}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第3行：梦境（独占一行，横向展开） -->
+                <div class="config-row">
+                    <div class="config-section full">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🌙 梦境</span>
+                            ${sw('梦境', '启用')}
+                        </div>
+                        <div class="config-grid cols-4" style="margin-bottom:6px;">
+                            ${item('自动战斗', sw('梦境', '自动战斗'))}
+                            ${item('阵容', num('梦境', '梦境阵容'))}
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label green">🟢初级</span>
+                            <div class="merchant-items-inline">
+                                ${item('挑战票', sw('梦境', '初级_挑战票'))}
+                                ${item('火把', sw('梦境', '初级_咸神火把'))}
+                                ${item('宝箱', sw('梦境', '初级_宝箱'))}
+                            </div>
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label yellow">🟡中级</span>
+                            <div class="merchant-items-inline">
+                                ${item('晶石', sw('梦境', '中级_梦魇晶石'))}
+                                ${item('鱼竿', sw('梦境', '中级_黄金鱼竿'))}
+                                ${item('招募令', sw('梦境', '中级_招募令'))}
+                                ${item('宝箱', sw('梦境', '中级_宝箱'))}
+                                ${item('将魂', sw('梦境', '中级_将魂碎片'))}
+                            </div>
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label red">🔴高级</span>
+                            <div class="merchant-items-inline">
+                                ${item('晶石', sw('梦境', '高级_梦魇晶石'))}
+                                ${item('鱼竿', sw('梦境', '高级_黄金鱼竿'))}
+                                ${item('招募令', sw('梦境', '高级_招募令'))}
+                                ${item('宝箱', sw('梦境', '高级_宝箱'))}
+                                ${item('将魂', sw('梦境', '高级_将魂碎片'))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function openBatchConfigModal() {
+            if (!tokens || tokens.length === 0) {
+                alert('暂无账号可配置');
+                return;
+            }
+            document.getElementById('batchConfigModalBody').innerHTML = renderBatchConfigContent();
+            document.getElementById('batchConfigModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBatchConfigModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('batchConfigModal').classList.remove('show');
+            if (!document.getElementById('configModal').classList.contains('show')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function openAccountSelect(task, key) {
+            currentBatchTask = task;
+            currentBatchKey = key;
+            enabledAccounts = getEnabledAccounts();
+
+            if (enabledAccounts.length === 0) {
+                alert('没有已启用的账号可供配置');
+                return;
+            }
+
+            // 初始化选中状态
+            selectedAccountsForBatch.clear();
+            enabledAccounts.forEach(name => {
+                const checked = key === null
+                    ? (currentConfig?.[name]?.[task] !== false && currentConfig?.[name]?.[task]?.启用 !== false)
+                    : (currentConfig?.[name]?.[task]?.[key] === true || (currentConfig?.[name]?.[task]?.[key] !== false && key !== '钓鱼月度补齐' && key !== '月度补齐' && key !== '领取残卷' && !key.startsWith('初级_') && !key.startsWith('中级_') && !key.startsWith('高级_')));
+                if (checked) selectedAccountsForBatch.add(name);
+            });
+
+            document.getElementById('accountSelectTitle').textContent = `批量设置 - ${key === 'null' ? task : key}`;
+            document.getElementById('accountSelectDesc').textContent = '✅ 勾选 = 开启　　⬜ 不勾选 = 关闭'; renderAccountSelectGrid();
+            document.getElementById('accountSelectModal').classList.add('show');
+        }
+
+        function renderAccountSelectGrid() {
+            const grid = document.getElementById('accountSelectGrid');
+            let html = '';
+            enabledAccounts.forEach(name => {
+                const isSelected = selectedAccountsForBatch.has(name);
+                html += `
+                <label class="account-select-item">
+                    <input type="checkbox" value="${name}" ${isSelected ? 'checked' : ''} onchange="toggleAccountSelection('${name}', this.checked)">
+                    <span style="font-size:13px; color:#334155;">${name}</span>
+                </label>`;
+            });
+            grid.innerHTML = html;
+        }
+
+        function toggleAccountSelection(name, checked) {
+            if (checked) {
+                selectedAccountsForBatch.add(name);
+            } else {
+                selectedAccountsForBatch.delete(name);
+            }
+        }
+
+        function toggleAllAccountSelect(selectAll) {
+            if (selectAll) {
+                enabledAccounts.forEach(name => selectedAccountsForBatch.add(name));
+            } else {
+                selectedAccountsForBatch.clear();
+            }
+            // 只更新DOM，不重新渲染整个网格以保持焦点
+            const checkboxes = document.querySelectorAll('.account-select-item input');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+        }
+
+        function closeAccountSelectModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('accountSelectModal').classList.remove('show');
+        }
+
+        async function applyAccountSelect() {
+            const taskName = currentBatchTask;
+            const key = currentBatchKey;
+            const btn = document.getElementById('batchSaveBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ 保存中...';
+            btn.disabled = true;
+
+            try {
+                // 先获取最新配置
+                const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
+                let fullConfig = r.ok ? await r.json() : {};
+                if (!fullConfig.账号配置) fullConfig.账号配置 = {};
+
+                enabledAccounts.forEach(name => {
+                    const shouldEnable = selectedAccountsForBatch.has(name);
+
+                    // 更新本地内存
+                    if (!currentConfig[name]) currentConfig[name] = {};
+                    if (key === 'null') {
+                        currentConfig[name][taskName] = shouldEnable;
+                    } else {
+                        if (!currentConfig[name][taskName]) currentConfig[name][taskName] = {};
+                        currentConfig[name][taskName][key] = shouldEnable;
+                    }
+
+                    // 更新要保存的 fullConfig
+                    if (!fullConfig.账号配置[name]) fullConfig.账号配置[name] = {};
+                    if (key === 'null') {
+                        fullConfig.账号配置[name][taskName] = shouldEnable;
+                    } else {
+                        if (!fullConfig.账号配置[name][taskName]) fullConfig.账号配置[name][taskName] = {};
+                        fullConfig.账号配置[name][taskName][key] = shouldEnable;
+                    }
+                });
+
+                const saveRes = await fetch(`${API_BASE}/api/save-config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fullConfig)
+                });
+                const result = await saveRes.json();
+
+                if (result.success) {
+                    const status = document.getElementById('saveStatus');
+                    status.textContent = '✓ 批量应用成功';
+                    status.classList.add('show');
+                    setTimeout(() => status.classList.remove('show'), 2000);
+
+                    // 重新渲染批量配置面板和主表格
+                    document.getElementById('batchConfigModalBody').innerHTML = renderBatchConfigContent();
+                    renderStatusTable();
+                    closeAccountSelectModal();
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        // ======================================================
 
         // 交互函数
         function toggleDetail(name) {
