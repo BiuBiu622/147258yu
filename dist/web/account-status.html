@@ -162,6 +162,7 @@
                         <div class="stat-label">有状态</div>
                     </div>
                     <button class="btn" style="background:#8b5cf6;" onclick="openGlobalSwitchModal()">🌐 全局开关</button>
+                    <button class="btn" style="background:#059669;" onclick="openBatchConfigModal()">⚙️ 批量设置</button>
                     <button class="btn" onclick="loadStatusData()">🔄 刷新</button>
                 </div>
             </div>
@@ -693,6 +694,159 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ==================== 批量设置弹窗 ==================== */
+        .batch-modal {
+            max-width: 1100px;
+            width: 95vw;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .batch-body {
+            display: flex;
+            gap: 16px;
+            flex: 1;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        .batch-left {
+            width: 240px;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-right: 1px solid #e5e7eb;
+            padding-right: 16px;
+        }
+
+        .batch-search {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .batch-search:focus {
+            border-color: #8b5cf6;
+        }
+
+        .batch-select-all {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .batch-account-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .batch-account-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 4px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .batch-account-item:hover {
+            background: #f3f4f6;
+        }
+
+        .batch-account-item input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: #8b5cf6;
+        }
+
+        .batch-right {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .batch-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .batch-footer .batch-count {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .batch-footer .batch-count strong {
+            color: #8b5cf6;
+            font-size: 16px;
+        }
+
+        .batch-footer .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .batch-footer .btn-apply {
+            padding: 8px 24px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .batch-footer .btn-apply:hover {
+            opacity: 0.9;
+        }
+
+        .batch-footer .btn-apply:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .batch-footer .btn-cancel {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 700px) {
+            .batch-body {
+                flex-direction: column;
+            }
+
+            .batch-left {
+                width: 100%;
+                min-width: unset;
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+                padding-right: 0;
+                padding-bottom: 12px;
+                max-height: 200px;
+            }
+        }
     </style>
 
     <!-- 配置弹窗容器 -->
@@ -714,6 +868,37 @@
                 <button class="config-modal-close" onclick="closeGlobalSwitchModal()">✕</button>
             </div>
             <div class="config-modal-body" id="globalSwitchBody"></div>
+        </div>
+    </div>
+
+    <!-- 批量设置弹窗 -->
+    <div class="config-modal-overlay" id="batchConfigModal" onclick="closeBatchConfigModal(event)">
+        <div class="config-modal batch-modal" onclick="event.stopPropagation()">
+            <div class="config-modal-header">
+                <span class="config-modal-title">⚙️ 批量设置账号配置</span>
+                <button class="config-modal-close" onclick="closeBatchConfigModal()">✕</button>
+            </div>
+            <div class="batch-body">
+                <div class="batch-left">
+                    <input type="text" class="batch-search" placeholder="🔍 搜索账号..."
+                        oninput="filterBatchAccounts(this.value)">
+                    <div class="batch-select-all">
+                        <input type="checkbox" id="batchSelectAll" onchange="toggleBatchSelectAll(this.checked)"
+                            checked>
+                        <label for="batchSelectAll">全选 (<span id="batchSelectedCount">0</span>/<span
+                                id="batchTotalCount">0</span>)</label>
+                    </div>
+                    <div class="batch-account-list" id="batchAccountList"></div>
+                </div>
+                <div class="batch-right" id="batchConfigBody"></div>
+            </div>
+            <div class="batch-footer">
+                <div class="batch-count">已选 <strong id="batchSelectedCount2">0</strong> 个账号</div>
+                <div class="btn-group">
+                    <button class="btn-cancel" onclick="closeBatchConfigModal()">取消</button>
+                    <button class="btn-apply" id="batchApplyBtn" onclick="applyBatchConfig()">应用到选中账号</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1476,54 +1661,422 @@
                 document.body.style.overflow = '';
             }
         }
+        // 全局开关保存队列：防止快速点击导致竟态条件（读-改-写被覆盖）
+        let _globalSwitchQueue = Promise.resolve();
+        function _queueGlobalSave(fn) {
+            _globalSwitchQueue = _globalSwitchQueue.then(fn).catch(e => console.error('全局开关保存失败:', e));
+            return _globalSwitchQueue;
+        }
+
 
         async function toggleGlobalMode(checked) {
-            try {
-                const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
-                let fullConfig = r.ok ? await r.json() : {};
-                if (!fullConfig.全局设置) fullConfig.全局设置 = {};
-                fullConfig.全局设置.启用全局模式 = checked;
-                globalConfig = fullConfig.全局设置;
+            return _queueGlobalSave(async () => {
+                try {
+                    const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
+                    let fullConfig = r.ok ? await r.json() : {};
+                    if (!fullConfig.全局设置) fullConfig.全局设置 = {};
+                    fullConfig.全局设置.启用全局模式 = checked;
+                    globalConfig = fullConfig.全局设置;
 
-                const saveRes = await fetch(`${API_BASE}/api/save-config`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(fullConfig)
-                });
-                const result = await saveRes.json();
-                if (result.success) {
-                    document.getElementById('globalSwitchBody').innerHTML = renderGlobalSwitchContent();
-                    const status = document.getElementById('saveStatus');
-                    status.textContent = checked ? '✓ 全局模式已开启' : '✓ 全局模式已关闭';
-                    status.classList.add('show');
-                    setTimeout(() => status.classList.remove('show'), 2000);
-                } else {
-                    alert('保存失败: ' + result.message);
+                    const saveRes = await fetch(`${API_BASE}/api/save-config`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(fullConfig)
+                    });
+                    const result = await saveRes.json();
+                    if (result.success) {
+                        document.getElementById('globalSwitchBody').innerHTML = renderGlobalSwitchContent();
+                        const status = document.getElementById('saveStatus');
+                        status.textContent = checked ? '✓ 全局模式已开启' : '✓ 全局模式已关闭';
+                        status.classList.add('show');
+                        setTimeout(() => status.classList.remove('show'), 2000);
+                    } else {
+                        alert('保存失败: ' + result.message);
+                    }
+                } catch (e) {
+                    alert('保存失败: ' + e.message);
                 }
-            } catch (e) {
-                alert('保存失败: ' + e.message);
-            }
+            });
         }
 
         async function toggleGlobalSwitch(task, key, checked) {
+            return _queueGlobalSave(async () => {
+                try {
+                    const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
+                    let fullConfig = r.ok ? await r.json() : {};
+                    if (!fullConfig.全局设置) fullConfig.全局设置 = {};
+                    if (!fullConfig.全局设置.任务开关) fullConfig.全局设置.任务开关 = {};
+
+                    if (key) {
+                        // 子选项（非启用开关）：存嵌套对象
+                        if (typeof fullConfig.全局设置.任务开关[task] !== 'object' || fullConfig.全局设置.任务开关[task] === null) {
+                            fullConfig.全局设置.任务开关[task] = {};
+                        }
+                        fullConfig.全局设置.任务开关[task][key] = checked;
+                    } else {
+                        // key === null 表示任务顶层启用开关（直接布尔值，scheduler 读取此值）
+                        fullConfig.全局设置.任务开关[task] = checked;
+                    }
+                    globalConfig = fullConfig.全局设置;
+
+                    const saveRes = await fetch(`${API_BASE}/api/save-config`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(fullConfig)
+                    });
+                    const result = await saveRes.json();
+                    if (result.success) {
+                        const label = key || task;
+                        const status = document.getElementById('saveStatus');
+                        status.textContent = `✓ ${label} 已${checked ? '开启' : '关闭'}`;
+                        status.classList.add('show');
+                        setTimeout(() => status.classList.remove('show'), 2000);
+                    } else {
+                        alert('保存失败: ' + result.message);
+                    }
+                } catch (e) {
+                    alert('保存失败: ' + e.message);
+                }
+            });
+        }
+        // ======================================================
+
+        // ==================== 批量设置功能 ====================
+        let batchTemplate = {};  // 批量配置模板（用于面板显示）
+        let batchSelectedAccounts = new Set();  // 选中的账号
+        let batchModifiedKeys = new Set();  // 用户实际修改过的字段（只应用这些）
+
+        function openBatchConfigModal() {
+            if (!tokens.length) { alert('暂无账号'); return; }
+            // 初始化：全选所有账号
+            batchSelectedAccounts = new Set(tokens.map(t => t.name));
+            // 初始化模板：填入所有默认值，确保面板显示的就是会应用的
+            batchTemplate = {
+                '每日任务': { '启用': true, '付费招募': true, '领取挂机奖励': true, '开启宝箱': true, '领取盐罐': true, '领取邮件': true, '黑市购买': true, '购买清单': true, '手动购买': true, '钓鱼月度补齐': false },
+                '竞技场': { '启用': true, '竞技场阵容': 1, '战斗次数': 3, '阵容切换': true, '月度补齐': false },
+                'BOSS战斗': { '启用': true, '战斗次数': 2, 'BOSS阵容': 1 },
+                '盐罐机器': { '启用': true, '领取残卷': true },
+                '咸将塔': { '启用': false, '爬塔阵容': 1, '最大小鱼干数': 10 },
+                '挂机奖励': true,
+                '俱乐部签到': true,
+                '每日咸王': true,
+                '灯神': true,
+                '宝库': true,
+                '咸鱼大冲关': true,
+                '疯狂赛车': true,
+                '军团商店购买': true,
+                '怪异塔': true,
+                '黑市周购买': { '启用': true, '购买宝箱': true, '购买金鱼杆': true, '购买贝壳': true, '购买白玉': true },
+                '梦境': { '启用': true, '自动战斗': true, '梦境阵容': 1, '初级_挑战票': true, '初级_咸神火把': false, '初级_宝箱': false, '中级_梦魇晶石': false, '中级_黄金鱼竿': false, '中级_招募令': false, '中级_宝箱': false, '中级_将魂碎片': false, '高级_梦魇晶石': false, '高级_黄金鱼竿': true, '高级_招募令': false, '高级_宝箱': true, '高级_将魂碎片': false }
+            };
+            batchModifiedKeys = new Set();  // 清空修改追踪
+            renderBatchAccountList('');
+            renderBatchConfigPanel();
+            document.getElementById('batchConfigModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBatchConfigModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('batchConfigModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function renderBatchAccountList(filter) {
+            const list = document.getElementById('batchAccountList');
+            const keyword = (filter || '').toLowerCase();
+            let html = '';
+            let visibleCount = 0;
+            tokens.forEach(t => {
+                if (keyword && !t.name.toLowerCase().includes(keyword)) return;
+                visibleCount++;
+                const checked = batchSelectedAccounts.has(t.name) ? 'checked' : '';
+                html += `<label class="batch-account-item"><input type="checkbox" ${checked} onchange="toggleBatchAccount('${t.name}', this.checked)"><span>${t.name}</span></label>`;
+            });
+            list.innerHTML = html || '<div style="padding:12px;color:#9ca3af;font-size:13px">无匹配账号</div>';
+            updateBatchCount();
+        }
+
+        function filterBatchAccounts(keyword) {
+            renderBatchAccountList(keyword);
+        }
+
+        function toggleBatchSelectAll(checked) {
+            const keyword = document.querySelector('.batch-search')?.value?.toLowerCase() || '';
+            tokens.forEach(t => {
+                if (keyword && !t.name.toLowerCase().includes(keyword)) return;
+                if (checked) batchSelectedAccounts.add(t.name);
+                else batchSelectedAccounts.delete(t.name);
+            });
+            renderBatchAccountList(keyword);
+        }
+
+        function toggleBatchAccount(name, checked) {
+            if (checked) batchSelectedAccounts.add(name);
+            else batchSelectedAccounts.delete(name);
+            updateBatchCount();
+        }
+
+        function updateBatchCount() {
+            const count = batchSelectedAccounts.size;
+            const total = tokens.length;
+            document.getElementById('batchSelectedCount').textContent = count;
+            document.getElementById('batchTotalCount').textContent = total;
+            document.getElementById('batchSelectedCount2').textContent = count;
+            document.getElementById('batchSelectAll').checked = count === total;
+            document.getElementById('batchApplyBtn').disabled = count === 0;
+        }
+
+        // 批量配置面板：使用 batchTemplate 而非具体账号
+        function updateBatchTemplate(task, key, value) {
+            if (!task) return;
+            if (key === null || key === undefined) {
+                batchTemplate[task] = value;
+                batchModifiedKeys.add(task);  // 标记为已修改
+            } else {
+                if (!batchTemplate[task] || typeof batchTemplate[task] !== 'object') {
+                    batchTemplate[task] = {};
+                }
+                batchTemplate[task][key] = value;
+                batchModifiedKeys.add(task + '.' + key);  // 标记为已修改
+            }
+        }
+
+        function adjustBatchNum(task, key, delta) {
+            const input = document.querySelector(`#batchConfigBody [data-batch-task="${task}"][data-batch-key="${key}"]`);
+            if (!input) return;
+            let val = parseInt(input.value) + delta;
+            const min = parseInt(input.min) || 1;
+            const max = parseInt(input.max) || 99;
+            val = Math.max(min, Math.min(max, val));
+            input.value = val;
+            updateBatchTemplate(task, key, val);
+        }
+
+        function renderBatchConfigPanel() {
+            // 使用默认值渲染配置面板（与单账号配置一致）
+            const c = batchTemplate;
+            const sw = (task, key, defaultVal) => {
+                const cur = (c[task] && typeof c[task] === 'object') ? c[task][key] : undefined;
+                const checked = cur !== undefined ? cur : defaultVal;
+                return `<label class="toggle-switch"><input type="checkbox" ${checked ? 'checked' : ''} onchange="updateBatchTemplate('${task}', '${key}', this.checked)"><span class="slider"></span></label>`;
+            };
+            const swRoot = (key, defaultVal) => {
+                const checked = c[key] !== undefined ? c[key] : defaultVal;
+                return `<label class="toggle-switch"><input type="checkbox" ${checked ? 'checked' : ''} onchange="updateBatchTemplate('${key}', null, this.checked)"><span class="slider"></span></label>`;
+            };
+            const num = (task, key, defaultVal, min, max) => {
+                const cur = (c[task] && typeof c[task] === 'object') ? c[task][key] : undefined;
+                const val = cur !== undefined ? cur : defaultVal;
+                return `<div class="cfg-num"><button onclick="adjustBatchNum('${task}','${key}',-1)">-</button><input type="number" value="${val}" min="${min}" max="${max}" data-batch-task="${task}" data-batch-key="${key}" onchange="updateBatchTemplate('${task}','${key}',parseInt(this.value))"><button onclick="adjustBatchNum('${task}','${key}',1)">+</button></div>`;
+            };
+            const item = (label, ctrl) => `<div class="cfg-item"><span>${label}</span>${ctrl}</div>`;
+
+            const html = `<div class="config-content">
+                <div style="padding:8px 12px;background:#fef3c7;border-radius:6px;font-size:12px;color:#92400e;margin-bottom:8px;">
+                    ⚠️ 以下配置将覆盖所有选中账号的对应设置
+                </div>
+                <!-- 第1行 -->
+                <div class="config-row">
+                    <div class="config-section wider">
+                        <div class="config-section-header">
+                            <span class="config-section-title">📋 每日任务</span>
+                            ${sw('每日任务', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-4">
+                            ${item('付费招募', sw('每日任务', '付费招募', true))}
+                            ${item('领取挂机', sw('每日任务', '领取挂机奖励', true))}
+                            ${item('开启宝箱', sw('每日任务', '开启宝箱', true))}
+                            ${item('领取盐罐', sw('每日任务', '领取盐罐', true))}
+                            ${item('领取邮件', sw('每日任务', '领取邮件', true))}
+                            ${item('黑市购买', sw('每日任务', '黑市购买', true))}
+                            ${item('购买清单', sw('每日任务', '购买清单', true))}
+                            ${item('手动购买', sw('每日任务', '手动购买', true))}
+                            ${item('钓鱼月度', sw('每日任务', '钓鱼月度补齐', false))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">⚔️ 竞技场</span>
+                            ${sw('竞技场', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-2">
+                            ${item('阵容', num('竞技场', '竞技场阵容', 1, 1, 5))}
+                            ${item('次数', num('竞技场', '战斗次数', 3, 1, 10))}
+                            ${item('切换阵容', sw('竞技场', '阵容切换', true))}
+                            ${item('月度补齐', sw('竞技场', '月度补齐', false))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">👹 BOSS</span>
+                            ${sw('BOSS战斗', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-2">
+                            ${item('次数', num('BOSS战斗', '战斗次数', 2, 1, 5))}
+                            ${item('阵容', num('BOSS战斗', 'BOSS阵容', 1, 1, 5))}
+                        </div>
+                    </div>
+                </div>
+                <!-- 第2行 -->
+                <div class="config-row">
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🔄 盐罐机器</span>
+                            ${sw('盐罐机器', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-3">
+                            ${item('残卷领取', sw('盐罐机器', '领取残卷', true))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🏰 咸将塔</span>
+                            ${sw('咸将塔', '启用', false)}
+                        </div>
+                        <div class="config-grid cols-2">
+                            ${item('阵容', num('咸将塔', '爬塔阵容', 1, 1, 5))}
+                            ${item('最大小鱼干', num('咸将塔', '最大小鱼干数', 10, 1, 50))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🛒 黑市周购买</span>
+                            ${sw('黑市周购买', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-2">
+                            ${item('宝箱', sw('黑市周购买', '购买宝箱', true))}
+                            ${item('金鱼杆', sw('黑市周购买', '购买金鱼杆', true))}
+                            ${item('贝壳', sw('黑市周购买', '购买贝壳', true))}
+                            ${item('白玉', sw('黑市周购买', '购买白玉', true))}
+                        </div>
+                    </div>
+                    <div class="config-section wider">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🏪 其他任务</span>
+                        </div>
+                        <div class="config-grid cols-3">
+                            ${item('挂机奖励', swRoot('挂机奖励', true))}
+                            ${item('俱乐部签到', swRoot('俱乐部签到', true))}
+                            ${item('每日咸王', swRoot('每日咸王', true))}
+                            ${item('灯神', swRoot('灯神', true))}
+                            ${item('宝库', swRoot('宝库', true))}
+                            ${item('咸鱼冲关', swRoot('咸鱼大冲关', true))}
+                            ${item('疯狂赛车', swRoot('疯狂赛车', true))}
+                            ${item('军团商店', swRoot('军团商店购买', true))}
+                            ${item('怪异塔', swRoot('怪异塔', true))}
+                        </div>
+                    </div>
+                </div>
+                <!-- 第3行 -->
+                <div class="config-row">
+                    <div class="config-section wide">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🌙 梦境</span>
+                            ${sw('梦境', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-4" style="margin-bottom:6px;">
+                            ${item('自动战斗', sw('梦境', '自动战斗', true))}
+                            ${item('阵容', num('梦境', '梦境阵容', 1, 1, 5))}
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label green">🟢初级</span>
+                            <div class="merchant-items-inline">
+                                ${item('挑战票', sw('梦境', '初级_挑战票', true))}
+                                ${item('火把', sw('梦境', '初级_咸神火把', false))}
+                                ${item('宝箱', sw('梦境', '初级_宝箱', false))}
+                            </div>
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label yellow">🟡中级</span>
+                            <div class="merchant-items-inline">
+                                ${item('晶石', sw('梦境', '中级_梦魇晶石', false))}
+                                ${item('鱼竿', sw('梦境', '中级_黄金鱼竿', false))}
+                                ${item('招募令', sw('梦境', '中级_招募令', false))}
+                                ${item('宝箱', sw('梦境', '中级_宝箱', false))}
+                                ${item('将魂', sw('梦境', '中级_将魂碎片', false))}
+                            </div>
+                        </div>
+                        <div class="merchant-row">
+                            <span class="merchant-label red">🔴高级</span>
+                            <div class="merchant-items-inline">
+                                ${item('晶石', sw('梦境', '高级_梦魇晶石', false))}
+                                ${item('鱼竿', sw('梦境', '高级_黄金鱼竿', true))}
+                                ${item('招募令', sw('梦境', '高级_招募令', false))}
+                                ${item('宝箱', sw('梦境', '高级_宝箱', true))}
+                                ${item('将魂', sw('梦境', '高级_将魂碎片', false))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            document.getElementById('batchConfigBody').innerHTML = html;
+        }
+
+        // 深度合并：将 src 中的每个字段覆盖到 target
+        function deepMerge(target, src) {
+            for (const key of Object.keys(src)) {
+                if (src[key] !== null && typeof src[key] === 'object' && !Array.isArray(src[key])) {
+                    if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+                    deepMerge(target[key], src[key]);
+                } else {
+                    target[key] = src[key];
+                }
+            }
+            return target;
+        }
+
+        async function applyBatchConfig() {
+            const selected = [...batchSelectedAccounts];
+            if (!selected.length) { alert('请至少选择一个账号'); return; }
+            if (batchModifiedKeys.size === 0) { alert('请先修改配置项（只有被操作过的开关才会应用）'); return; }
+
+            const btn = document.getElementById('batchApplyBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
             try {
+                // 读取最新配置
                 const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
                 let fullConfig = r.ok ? await r.json() : {};
-                if (!fullConfig.全局设置) fullConfig.全局设置 = {};
-                if (!fullConfig.全局设置.任务开关) fullConfig.全局设置.任务开关 = {};
+                if (!fullConfig.账号配置) fullConfig.账号配置 = {};
 
-                if (key) {
-                    // 子选项（非启用开关）：存嵌套对象
-                    if (typeof fullConfig.全局设置.任务开关[task] !== 'object' || fullConfig.全局设置.任务开关[task] === null) {
-                        fullConfig.全局设置.任务开关[task] = {};
+                // 只收集被用户修改过的字段
+                const modifiedData = {};
+                for (const mk of batchModifiedKeys) {
+                    if (mk.includes('.')) {
+                        // 嵌套字段：如 '竞技场.竞技场阵容'
+                        const [task, key] = mk.split('.');
+                        if (!modifiedData[task]) modifiedData[task] = {};
+                        modifiedData[task][key] = batchTemplate[task]?.[key];
+                    } else {
+                        // 顶层字段：如 '疯狂赛车'
+                        modifiedData[mk] = batchTemplate[mk];
                     }
-                    fullConfig.全局设置.任务开关[task][key] = checked;
-                } else {
-                    // key === null 表示任务顶层启用开关（直接布尔值，scheduler 读取此值）
-                    fullConfig.全局设置.任务开关[task] = checked;
                 }
-                globalConfig = fullConfig.全局设置;
 
+                // 将修改合并到每个选中账号
+                selected.forEach(name => {
+                    if (!fullConfig.账号配置[name]) fullConfig.账号配置[name] = { 启用: true };
+
+                    for (const key of Object.keys(modifiedData)) {
+                        if (modifiedData[key] !== null && typeof modifiedData[key] === 'object') {
+                            // 嵌套对象合并（如 竞技场: { 竞技场阵容: 3 }）
+                            if (!fullConfig.账号配置[name][key] || typeof fullConfig.账号配置[name][key] !== 'object') {
+                                fullConfig.账号配置[name][key] = {};
+                            }
+                            deepMerge(fullConfig.账号配置[name][key], modifiedData[key]);
+                        } else {
+                            // 简单任务开关（如 疯狂赛车: true）
+                            if (!fullConfig.账号配置[name][key] || typeof fullConfig.账号配置[name][key] !== 'object') {
+                                fullConfig.账号配置[name][key] = {};
+                            }
+                            fullConfig.账号配置[name][key].启用 = modifiedData[key];
+                        }
+                    }
+                });
+
+                // 一次性保存
                 const saveRes = await fetch(`${API_BASE}/api/save-config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1531,19 +2084,26 @@
                 });
                 const result = await saveRes.json();
                 if (result.success) {
-                    const label = key || task;
+                    currentConfig = fullConfig.账号配置;
+                    closeBatchConfigModal();
+                    const modCount = batchModifiedKeys.size;
                     const status = document.getElementById('saveStatus');
-                    status.textContent = `✓ ${label} 已${checked ? '开启' : '关闭'}`;
+                    status.textContent = `✓ 已批量更新 ${selected.length} 个账号（${modCount} 项配置）`;
                     status.classList.add('show');
-                    setTimeout(() => status.classList.remove('show'), 2000);
+                    setTimeout(() => status.classList.remove('show'), 3000);
+                    loadStatusData(); // 刷新页面
                 } else {
                     alert('保存失败: ' + result.message);
                 }
             } catch (e) {
                 alert('保存失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '应用到选中账号';
             }
         }
         // ======================================================
+
 
         // 交互函数
         function toggleDetail(name) {
