@@ -161,6 +161,8 @@
                         <div class="stat-value" id="withStatus">0</div>
                         <div class="stat-label">有状态</div>
                     </div>
+                    <button class="btn" id="autoRepairBtn" style="background:#f59e0b;"
+                        onclick="runDailyTaskForLowActive()">⚡ 一键补差</button>
                     <button class="btn" style="background:#8b5cf6;" onclick="openGlobalSwitchModal()">🌐 全局开关</button>
                     <button class="btn" style="background:#059669;" onclick="openBatchConfigModal()">⚙️ 批量设置</button>
                     <button class="btn" onclick="loadStatusData()">🔄 刷新</button>
@@ -902,6 +904,107 @@
         </div>
     </div>
 
+    <!-- ===== 一键补差进度弹窗 ===== -->
+    <div class="config-modal-overlay" id="autoRepairModal">
+        <div class="config-modal" style="max-width:520px;width:95vw;" onclick="event.stopPropagation()">
+            <div class="config-modal-header" style="background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);">
+                <span class="config-modal-title" id="autoRepairTitle">⚡ 一键补差</span>
+                <button class="config-modal-close" id="autoRepairCloseBtn" onclick="closeAutoRepairModal()">✕</button>
+            </div>
+            <div class="config-modal-body">
+                <div id="autoRepairList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                <div style="margin-top:16px;">
+                    <div
+                        style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px;">
+                        <span>总进度</span>
+                        <span id="autoRepairProgressText">0 / 0</span>
+                    </div>
+                    <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+                        <div id="autoRepairProgressBar"
+                            style="height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);border-radius:4px;transition:width 0.3s;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* ===== 一键补差弹窗样式 ===== */
+        .repair-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .repair-item-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .repair-item-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .repair-item-score {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .repair-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .repair-badge.waiting {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .repair-badge.running {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .repair-badge.success {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .repair-badge.skip {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .repair-badge.error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin-icon {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+
     <script>
         // ==================== API配置 ====================
         function getApiBase() {
@@ -916,6 +1019,126 @@
         let currentConfig = null, globalConfig = null, statusData = {}, tokens = [], countdowns = {}, expandedAccount = null;
         let autoLogInterval = null, autoHangupInterval = null, isAutoLog = false, isAutoHangup = false;
         let schedulerPaused = false;
+
+        // ===== 一键补差功能 =====
+        function closeAutoRepairModal() {
+            const closeBtn = document.getElementById('autoRepairCloseBtn');
+            if (closeBtn && closeBtn.disabled) return; // 执行中不允许关闭
+            document.getElementById('autoRepairModal').classList.remove('show');
+        }
+
+        async function runDailyTaskForLowActive() {
+            // 1. 找出活跃度 < 70 的账号
+            const lowActiveAccounts = tokens.filter(t => {
+                const dp = statusData[t.name]?.dailyTask?.dailyPoint;
+                return dp === undefined || dp < 70;
+            });
+
+            if (lowActiveAccounts.length === 0) {
+                alert('✅ 所有账号每日活跃度均已达标（≥70），无需补差！');
+                return;
+            }
+
+            // 2. 构建弹窗账号列表
+            const list = document.getElementById('autoRepairList');
+            list.innerHTML = lowActiveAccounts.map((t, i) => {
+                const dp = statusData[t.name]?.dailyTask?.dailyPoint ?? '?';
+                return `<div class="repair-item" id="repair-item-${i}">
+                    <div class="repair-item-left">
+                        <span class="repair-item-name">${t.name}</span>
+                        <span class="repair-item-score">活跃度：${dp}/110</span>
+                    </div>
+                    <span class="repair-badge waiting" id="repair-badge-${i}">⏳ 等待中</span>
+                </div>`;
+            }).join('');
+
+            document.getElementById('autoRepairTitle').textContent = `⚡ 一键补差 — 共 ${lowActiveAccounts.length} 个账号`;
+            document.getElementById('autoRepairProgressText').textContent = `0 / ${lowActiveAccounts.length}`;
+            document.getElementById('autoRepairProgressBar').style.width = '0%';
+            document.getElementById('autoRepairCloseBtn').disabled = true;
+            document.getElementById('autoRepairModal').classList.add('show');
+
+            const btn = document.getElementById('autoRepairBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ 执行中...'; }
+
+            // 3. 逐个串行执行
+            let doneCount = 0;
+            for (let i = 0; i < lowActiveAccounts.length; i++) {
+                const account = lowActiveAccounts[i];
+                const badge = document.getElementById(`repair-badge-${i}`);
+
+                // 更新为执行中
+                badge.className = 'repair-badge running';
+                badge.innerHTML = '<span class="spin-icon">⚙️</span> 执行中';
+
+                try {
+                    // 启动任务
+                    const startRes = await fetch(`${API_BASE}/api/run-task`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accountName: account.name, taskName: '每日任务' })
+                    });
+                    const startData = await startRes.json();
+
+                    if (!startData.success) {
+                        badge.className = 'repair-badge error';
+                        badge.textContent = '❌ 启动失败';
+                        doneCount++;
+                        continue;
+                    }
+
+                    // 轮询状态（每2秒，最多等15分钟）
+                    const jobId = startData.jobId;
+                    const maxPolls = 450; // 450 × 2s = 15分钟
+                    let pollCount = 0;
+                    let finalStatus = 'error';
+
+                    while (pollCount < maxPolls) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        pollCount++;
+                        try {
+                            const statusRes = await fetch(`${API_BASE}/api/run-task/status?jobId=${jobId}`);
+                            const statusData2 = await statusRes.json();
+                            if (statusData2.status === 'done') {
+                                finalStatus = 'success'; break;
+                            } else if (statusData2.status === 'error') {
+                                // 退出码2 = 跳过（视为成功）
+                                finalStatus = statusData2.exitCode === 2 ? 'skip' : 'error';
+                                break;
+                            }
+                        } catch (e) { /* 网络抖动，继续轮询 */ }
+                    }
+
+                    if (finalStatus === 'success') {
+                        badge.className = 'repair-badge success';
+                        badge.textContent = '✅ 完成';
+                    } else if (finalStatus === 'skip') {
+                        badge.className = 'repair-badge skip';
+                        badge.textContent = '⏭️ 跳过';
+                    } else {
+                        badge.className = 'repair-badge error';
+                        badge.textContent = pollCount >= maxPolls ? '⏰ 超时' : '❌ 失败';
+                    }
+
+                } catch (e) {
+                    badge.className = 'repair-badge error';
+                    badge.textContent = '❌ 错误';
+                }
+
+                // 更新进度条
+                doneCount++;
+                const pct = Math.round((doneCount / lowActiveAccounts.length) * 100);
+                document.getElementById('autoRepairProgressBar').style.width = pct + '%';
+                document.getElementById('autoRepairProgressText').textContent = `${doneCount} / ${lowActiveAccounts.length}`;
+            }
+
+            // 4. 全部完成
+            document.getElementById('autoRepairCloseBtn').disabled = false;
+            if (btn) { btn.disabled = false; btn.textContent = '⚡ 一键补差'; }
+
+            // 5. 延迟3秒刷新状态数据
+            setTimeout(() => loadStatusData(), 3000);
+        }
 
         // ===== 调度器控制功能 =====
         async function getSchedulerStatus() {
