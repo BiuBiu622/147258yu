@@ -1009,12 +1009,14 @@
         // ==================== API配置 ====================
         function getApiBase() {
             if (typeof window.API_BASE_URL !== 'undefined') return window.API_BASE_URL;
-            const hostname = window.location.hostname;
             const port = window.location.port;
-            if (port === '8080') return `http://${hostname}:3000`;
-            return `http://${hostname}:3000`;
+            // 通过 8080 静态服务器访问时，使用相对路径走反向代理（无需跨端口）
+            if (port === '8080' || port === '' || port === '443' || port === '80') return '';
+            // 直接访问 3000 时，保持原样
+            return '';
         }
         const API_BASE = getApiBase();
+
 
         let currentConfig = null, globalConfig = null, statusData = {}, tokens = [], countdowns = {}, expandedAccount = null;
         let autoLogInterval = null, autoHangupInterval = null, isAutoLog = false, isAutoHangup = false;
@@ -1078,17 +1080,40 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ accountName: account.name, taskName: '每日任务' })
                     });
+
+                    // 检查 HTTP 状态码
+                    if (!startRes.ok) {
+                        const errText = await startRes.text();
+                        console.error(`[补差] 启动失败 HTTP ${startRes.status}:`, errText);
+                        badge.className = 'repair-badge error';
+                        badge.title = `HTTP ${startRes.status}: ${errText.slice(0, 200)}`;
+                        badge.textContent = `❌ HTTP ${startRes.status}`;
+                        doneCount++;
+                        continue;
+                    }
+
                     const startData = await startRes.json();
 
                     if (!startData.success) {
+                        console.error(`[补差] 启动失败:`, startData.message || startData.error);
                         badge.className = 'repair-badge error';
+                        badge.title = startData.message || startData.error || '未知错误';
                         badge.textContent = '❌ 启动失败';
                         doneCount++;
                         continue;
                     }
 
-                    // 轮询状态（每2秒，最多等15分钟）
+                    // 检查 jobId 有效性
                     const jobId = startData.jobId;
+                    if (!jobId) {
+                        console.error(`[补差] 服务器未返回 jobId`);
+                        badge.className = 'repair-badge error';
+                        badge.textContent = '❌ 无 jobId';
+                        doneCount++;
+                        continue;
+                    }
+
+                    // 轮询状态（每2秒，最多等15分钟）
                     const maxPolls = 450; // 450 × 2s = 15分钟
                     let pollCount = 0;
                     let finalStatus = 'error';
@@ -1098,12 +1123,21 @@
                         pollCount++;
                         try {
                             const statusRes = await fetch(`${API_BASE}/api/run-task/status?jobId=${jobId}`);
+                            if (!statusRes.ok) {
+                                // 作业不存在（404），直接视为错误退出
+                                console.error(`[补差] 状态查询 HTTP ${statusRes.status}`);
+                                finalStatus = 'error';
+                                break;
+                            }
                             const statusData2 = await statusRes.json();
                             if (statusData2.status === 'done') {
                                 finalStatus = 'success'; break;
                             } else if (statusData2.status === 'error') {
                                 // 退出码2 = 跳过（视为成功）
                                 finalStatus = statusData2.exitCode === 2 ? 'skip' : 'error';
+                                if (finalStatus === 'error') {
+                                    console.error(`[补差] 任务执行失败，退出码: ${statusData2.exitCode}`);
+                                }
                                 break;
                             }
                         } catch (e) { /* 网络抖动，继续轮询 */ }
@@ -1121,8 +1155,10 @@
                     }
 
                 } catch (e) {
+                    console.error(`[补差] 账号 ${account.name} 执行异常:`, e);
                     badge.className = 'repair-badge error';
-                    badge.textContent = '❌ 错误';
+                    badge.title = e.message || String(e);
+                    badge.textContent = '❌ 网络错误';
                 }
 
                 // 更新进度条
