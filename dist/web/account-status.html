@@ -204,10 +204,20 @@
                 <h2>📁 BIN文件管理</h2>
             </div>
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📤</div>
-                <div class="upload-text">点击或拖拽BIN文件到此处上传</div>
-                <div class="upload-hint">支持 .bin 格式文件，上传后自动转换Token</div>
+                <div class="upload-icon" id="uploadIcon">📤</div>
+                <div class="upload-text" id="uploadText">点击或拖拽BIN文件到此处上传</div>
+                <div class="upload-hint" id="uploadHint">支持 .bin 格式文件，上传后自动转换Token</div>
                 <input type="file" id="fileInput" accept=".bin" multiple>
+            </div>
+            <div id="uploadProgressArea" style="display:none;margin:-8px 0 16px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span id="uploadProgressLabel" style="font-size:13px;color:#334155;font-weight:500;">准备上传...</span>
+                    <span id="uploadProgressText" style="font-size:12px;color:#64748b;">0/0</span>
+                </div>
+                <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+                    <div id="uploadProgressBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.3s;"></div>
+                </div>
+                <div id="uploadResultList" style="margin-top:8px;font-size:12px;max-height:120px;overflow-y:auto;"></div>
             </div>
             <div class="file-list">
                 <div class="file-list-header">
@@ -896,9 +906,18 @@
             </div>
             <div class="batch-footer">
                 <div class="batch-count">已选 <strong id="batchSelectedCount2">0</strong> 个账号</div>
+                <div id="batchProgressArea" style="display:none;flex:1;margin:0 16px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:3px;">
+                        <span id="batchProgressLabel">保存中...</span>
+                        <span id="batchProgressText">0/0</span>
+                    </div>
+                    <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                        <div id="batchProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#10b981);border-radius:3px;transition:width 0.2s;"></div>
+                    </div>
+                </div>
                 <div class="btn-group">
                     <button class="btn-cancel" onclick="closeBatchConfigModal()">取消</button>
-                    <button class="btn-apply" id="batchApplyBtn" onclick="applyBatchConfig()">应用到选中账号</button>
+                    <button class="btn-apply" id="batchApplyBtn" onclick="applyBatchConfig()">💾 保存到选中账号</button>
                 </div>
             </div>
         </div>
@@ -1021,6 +1040,7 @@
         let currentConfig = null, globalConfig = null, statusData = {}, tokens = [], countdowns = {}, expandedAccount = null;
         let autoLogInterval = null, autoHangupInterval = null, isAutoLog = false, isAutoHangup = false;
         let schedulerPaused = false;
+        let isBinUploading = false; // ✅ BIN 上传状态标记
 
         // ===== 一键补差功能 =====
         function closeAutoRepairModal() {
@@ -1245,6 +1265,10 @@
 
         // 页面切换
         function showPage(page, updateHash = true) {
+            if (isBinUploading) {
+                alert('⚠️ 正在上传 BIN 文件，请等待完成后再切换页面！');
+                return;
+            }
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-' + page).classList.add('active');
@@ -1259,6 +1283,14 @@
             else if (page === 'logs') loadLogs();
             else if (page === 'hangup') loadHangupData();
         }
+
+        // 刷新/关闭浏览器守卫
+        window.addEventListener('beforeunload', (e) => {
+            if (isBinUploading) {
+                e.preventDefault();
+                e.returnValue = ''; // 现代浏览器需要设置这个
+            }
+        });
 
         // 活动周计算
         const 活动类型 = { 0: '黑市周', 1: '招募周', 2: '宝箱周' };
@@ -1301,8 +1333,8 @@
                 try {
                     const r = await fetch(`/data/task-config.json?t=${t}`); if (r.ok) {
                         const fullConfig = await r.json();
-                        currentConfig = fullConfig.账号配置 || {};
-                        globalConfig = fullConfig.全局设置 || {};
+                        currentConfig = JSON.parse(JSON.stringify(fullConfig.账号配置 || {}));
+                        globalConfig = JSON.parse(JSON.stringify(fullConfig.全局设置 || {}));
                     }
                 } catch (e) { }
 
@@ -1769,8 +1801,14 @@
 
             // 全局开关辅助函数
             const gsw = (task, key) => {
-                // key==='启用' 时读顶层布尔值（与 scheduler.js 对齐），否则读嵌套值
-                const val = (!key || key === '启用') ? ts[task] : ts[task]?.[key];
+                // ✅ 兼容：值可能是布尔值或对象
+                let val;
+                if (!key || key === '启用') {
+                    // 主开关：如果是布尔值直接读，如果是对象读.启用
+                    val = typeof ts[task] === 'object' ? ts[task]?.启用 : ts[task];
+                } else {
+                    val = ts[task]?.[key];
+                }
                 const checked = val !== false;
                 const args = (!key || key === '启用') ? `'${task}', null` : `'${task}', '${key}'`;
                 return `<label class="toggle-switch"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleGlobalSwitch(${args}, this.checked)"><span class="slider"></span></label>`;
@@ -1968,13 +2006,25 @@
 
                     if (key) {
                         // 子选项（非启用开关）：存嵌套对象
-                        if (typeof fullConfig.全局设置.任务开关[task] !== 'object' || fullConfig.全局设置.任务开关[task] === null) {
+                        const currentVal = fullConfig.全局设置.任务开关[task];
+                        if (typeof currentVal !== 'object' || currentVal === null) {
+                            // ✅ 修复：保留原有的主开关布尔值到.启用字段
+                            const prevEnabled = currentVal; // 可能是 true/false/undefined
                             fullConfig.全局设置.任务开关[task] = {};
+                            if (prevEnabled === false) {
+                                fullConfig.全局设置.任务开关[task].启用 = false;
+                            }
                         }
                         fullConfig.全局设置.任务开关[task][key] = checked;
                     } else {
-                        // key === null 表示任务顶层启用开关（直接布尔值，scheduler 读取此值）
-                        fullConfig.全局设置.任务开关[task] = checked;
+                        // key === null 表示任务顶层启用开关
+                        const currentVal = fullConfig.全局设置.任务开关[task];
+                        if (typeof currentVal === 'object' && currentVal !== null) {
+                            // ✅ 如果已经是对象（有子选项），更新.启用字段而非覆盖整个对象
+                            fullConfig.全局设置.任务开关[task].启用 = checked;
+                        } else {
+                            fullConfig.全局设置.任务开关[task] = checked;
+                        }
                     }
                     globalConfig = fullConfig.全局设置;
 
@@ -2291,74 +2341,120 @@
             if (batchModifiedKeys.size === 0) { alert('请先修改配置项（只有被操作过的开关才会应用）'); return; }
 
             const btn = document.getElementById('batchApplyBtn');
+            const progressArea = document.getElementById('batchProgressArea');
+            const progressLabel = document.getElementById('batchProgressLabel');
+            const progressText = document.getElementById('batchProgressText');
+            const progressBar = document.getElementById('batchProgressBar');
+
             btn.disabled = true;
-            btn.textContent = '保存中...';
+            btn.textContent = '⏳ 保存中...';
+            progressArea.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.style.background = 'linear-gradient(90deg,#059669,#10b981)';
+
+            // 只收集被用户修改过的字段
+            const modifiedData = {};
+            for (const mk of batchModifiedKeys) {
+                if (mk.includes('.')) {
+                    const [task, key] = mk.split('.');
+                    if (!modifiedData[task]) modifiedData[task] = {};
+                    modifiedData[task][key] = batchTemplate[task]?.[key];
+                } else {
+                    modifiedData[mk] = batchTemplate[mk];
+                }
+            }
+
+            const total = selected.length;
+            const modCount = batchModifiedKeys.size;
+            let successCount = 0;
+            let failCount = 0;
 
             try {
-                // 读取最新配置
+                // 一次性读取最新配置
                 const r = await fetch(`/data/task-config.json?t=${Date.now()}`);
                 let fullConfig = r.ok ? await r.json() : {};
                 if (!fullConfig.账号配置) fullConfig.账号配置 = {};
 
-                // 只收集被用户修改过的字段
-                const modifiedData = {};
-                for (const mk of batchModifiedKeys) {
-                    if (mk.includes('.')) {
-                        // 嵌套字段：如 '竞技场.竞技场阵容'
-                        const [task, key] = mk.split('.');
-                        if (!modifiedData[task]) modifiedData[task] = {};
-                        modifiedData[task][key] = batchTemplate[task]?.[key];
-                    } else {
-                        // 顶层字段：如 '疯狂赛车'
-                        modifiedData[mk] = batchTemplate[mk];
-                    }
-                }
+                // 逐个账号合并修改（显示进度）
+                for (let i = 0; i < total; i++) {
+                    const name = selected[i];
+                    const shortName = name.length > 12 ? name.substring(0, 12) + '...' : name;
+                    progressLabel.textContent = `正在处理: ${shortName}`;
+                    progressText.textContent = `${i + 1}/${total}`;
+                    progressBar.style.width = `${((i + 0.5) / total * 100).toFixed(1)}%`;
 
-                // 将修改合并到每个选中账号
-                selected.forEach(name => {
                     if (!fullConfig.账号配置[name]) fullConfig.账号配置[name] = { 启用: true };
 
                     for (const key of Object.keys(modifiedData)) {
                         if (modifiedData[key] !== null && typeof modifiedData[key] === 'object') {
-                            // 嵌套对象合并（如 竞技场: { 竞技场阵容: 3 }）
                             if (!fullConfig.账号配置[name][key] || typeof fullConfig.账号配置[name][key] !== 'object') {
                                 fullConfig.账号配置[name][key] = {};
                             }
                             deepMerge(fullConfig.账号配置[name][key], modifiedData[key]);
                         } else {
-                            // 简单任务开关（如 疯狂赛车: true）
                             if (!fullConfig.账号配置[name][key] || typeof fullConfig.账号配置[name][key] !== 'object') {
                                 fullConfig.账号配置[name][key] = {};
                             }
                             fullConfig.账号配置[name][key].启用 = modifiedData[key];
                         }
                     }
-                });
 
-                // 一次性保存
+                    progressBar.style.width = `${((i + 1) / total * 100 * 0.8).toFixed(1)}%`;
+                    // 让UI有机会更新
+                    if (i % 10 === 0) await new Promise(r => setTimeout(r, 0));
+                }
+
+                // 一次性保存到服务器
+                progressLabel.textContent = `正在写入服务器...`;
+                progressBar.style.width = '85%';
+
                 const saveRes = await fetch(`${API_BASE}/api/save-config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(fullConfig)
                 });
                 const result = await saveRes.json();
+
                 if (result.success) {
-                    currentConfig = fullConfig.账号配置;
-                    closeBatchConfigModal();
-                    const modCount = batchModifiedKeys.size;
-                    const status = document.getElementById('saveStatus');
-                    status.textContent = `✓ 已批量更新 ${selected.length} 个账号（${modCount} 项配置）`;
-                    status.classList.add('show');
-                    setTimeout(() => status.classList.remove('show'), 3000);
-                    loadStatusData(); // 刷新页面
+                    successCount = total;
+                    // 同步到内存缓存（深拷贝）
+                    currentConfig = JSON.parse(JSON.stringify(fullConfig.账号配置));
                 } else {
-                    alert('保存失败: ' + result.message);
+                    failCount = total;
                 }
+
+                // 保存完成
+                progressLabel.textContent = `✅ 保存完成`;
+                progressText.textContent = failCount > 0
+                    ? `成功 ${successCount}，失败 ${failCount}`
+                    : `全部成功 ${successCount}/${total}`;
+                progressBar.style.width = '100%';
+
+                if (failCount > 0) {
+                    progressBar.style.background = 'linear-gradient(90deg,#f59e0b,#d97706)';
+                }
+
+                // 清空修改标记，允许继续设置下一项
+                batchModifiedKeys = new Set();
+
+                // 显示全局提示
+                const status = document.getElementById('saveStatus');
+                status.textContent = `✓ 已批量保存 ${successCount} 个账号（${modCount} 项配置）`;
+                status.classList.add('show');
+                setTimeout(() => status.classList.remove('show'), 3000);
+
+                // 2秒后恢复进度条隐藏
+                setTimeout(() => {
+                    progressArea.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 2000);
+
             } catch (e) {
-                alert('保存失败: ' + e.message);
+                alert('批量保存异常: ' + e.message);
+                progressArea.style.display = 'none';
             } finally {
                 btn.disabled = false;
-                btn.textContent = '应用到选中账号';
+                btn.textContent = '💾 保存到选中账号';
             }
         }
         // ======================================================
@@ -2434,24 +2530,31 @@
             }
         }
 
+        // ✅ 串行保存队列：防止并发读-改-写竞态覆盖
+        let _accountSaveQueue = Promise.resolve();
         async function saveAccountConfig(name) {
-            try {
-                const response = await fetch(`/data/task-config.json?t=${Date.now()}`);
-                let fullConfig = response.ok ? await response.json() : {};
-                if (!fullConfig.账号配置) fullConfig.账号配置 = {};
-                fullConfig.账号配置[name] = currentConfig[name];
-                const saveRes = await fetch(`${API_BASE}/api/save-config`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(fullConfig)
-                });
-                const result = await saveRes.json();
-                if (result.success) {
-                    const status = document.getElementById('saveStatus');
-                    status.classList.add('show');
-                    setTimeout(() => status.classList.remove('show'), 2000);
-                }
-            } catch (e) { console.error('保存失败:', e); }
+            _accountSaveQueue = _accountSaveQueue.then(async () => {
+                try {
+                    // 每次保存前从服务器读取最新配置
+                    const response = await fetch(`/data/task-config.json?t=${Date.now()}`);
+                    let fullConfig = response.ok ? await response.json() : {};
+                    if (!fullConfig.账号配置) fullConfig.账号配置 = {};
+                    // ✅ 深拷贝避免引用污染
+                    fullConfig.账号配置[name] = JSON.parse(JSON.stringify(currentConfig[name] || {}));
+                    const saveRes = await fetch(`${API_BASE}/api/save-config`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(fullConfig)
+                    });
+                    const result = await saveRes.json();
+                    if (result.success) {
+                        const status = document.getElementById('saveStatus');
+                        status.classList.add('show');
+                        setTimeout(() => status.classList.remove('show'), 2000);
+                    }
+                } catch (e) { console.error('保存失败:', e); }
+            }).catch(e => console.error('保存队列异常:', e));
+            return _accountSaveQueue;
         }
 
         function startCountdown(name, status) {
@@ -2579,19 +2682,83 @@
         }
 
         async function handleFileUpload(event) {
-            const files = Array.from(event.target.files);
+            const files = Array.from(event.target.files).filter(f => f.name.endsWith('.bin'));
             if (!files.length) return;
-            for (const file of files) {
-                if (!file.name.endsWith('.bin')) { alert(`${file.name} 不是BIN文件`); continue; }
-                const formData = new FormData(); formData.append('file', file);
+
+            // ✅ 开启上传锁定
+            isBinUploading = true;
+
+            const progressArea = document.getElementById('uploadProgressArea');
+            const progressLabel = document.getElementById('uploadProgressLabel');
+            const progressText = document.getElementById('uploadProgressText');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const resultList = document.getElementById('uploadResultList');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+
+            // 显示进度区域
+            progressArea.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.style.background = 'linear-gradient(90deg,#3b82f6,#2563eb)';
+            resultList.innerHTML = '';
+            uploadIcon.textContent = '⏳';
+            uploadText.textContent = '正在上传...';
+
+            const total = files.length;
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < total; i++) {
+                const file = files[i];
+                const shortName = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+                progressLabel.textContent = `上传中: ${shortName}`;
+                progressText.textContent = `${i + 1}/${total}`;
+                progressBar.style.width = `${((i + 0.3) / total * 100).toFixed(1)}%`;
+
+                const formData = new FormData();
+                formData.append('file', file);
                 try {
                     const response = await fetch(`${API_BASE}/api/upload-bin`, { method: 'POST', body: formData });
                     const data = await response.json();
-                    if (data.success) alert(`✓ ${file.name} 上传成功！`);
-                    else throw new Error(data.message || '上传失败');
-                } catch (e) { alert(`上传 ${file.name} 失败: ${e.message}`); }
+                    if (data.success) {
+                        successCount++;
+                        resultList.innerHTML += `<div style="color:#059669;">✅ ${file.name} 上传成功</div>`;
+                    } else {
+                        failCount++;
+                        resultList.innerHTML += `<div style="color:#dc2626;">❌ ${file.name}: ${data.message || '失败'}</div>`;
+                    }
+                } catch (e) {
+                    failCount++;
+                    resultList.innerHTML += `<div style="color:#dc2626;">❌ ${file.name}: ${e.message}</div>`;
+                }
+                progressBar.style.width = `${((i + 1) / total * 100).toFixed(1)}%`;
             }
+
+            // 完成状态
+            progressBar.style.width = '100%';
+            if (failCount > 0) {
+                progressBar.style.background = 'linear-gradient(90deg,#f59e0b,#d97706)';
+                progressLabel.textContent = `⚠️ 完成（${failCount} 个失败）`;
+            } else {
+                progressBar.style.background = 'linear-gradient(90deg,#059669,#10b981)';
+                progressLabel.textContent = `✅ 全部上传成功`;
+            }
+            progressText.textContent = `${successCount}/${total}`;
+
+            // 恢复上传区域
+            uploadIcon.textContent = '📤';
+            uploadText.textContent = '点击或拖拽BIN文件到此处上传';
+
+            // 刷新文件列表
             setTimeout(() => loadBinFiles(), 1000);
+            
+            // 5秒后自动隐藏进度并解除锁定
+            setTimeout(() => {
+                progressArea.style.display = 'none';
+                resultList.innerHTML = '';
+                // ✅ 解除上传锁定
+                isBinUploading = false;
+            }, 5000);
             document.getElementById('fileInput').value = '';
         }
 
