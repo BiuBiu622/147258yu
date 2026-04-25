@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>游戏助手</title>
+    <title>账号助手</title>
     <link rel="stylesheet" href="css/main.css">
     <style>
         /* ==================== 新版详情面板 ==================== */
@@ -133,7 +133,11 @@
 <body>
     <nav class="navbar">
         <div class="navbar-inner">
-            <a href="/" class="navbar-brand">💎 游戏助手</a>
+            <a href="/" class="navbar-brand">
+                💎 账号助手
+                <span
+                    style="font-size: 10px; font-weight: bold; color: #ff4d4f; -webkit-text-fill-color: #ff4d4f !important; margin-left: 6px; background: white; padding: 1px 6px; border-radius: 4px; border: 1px solid #ff4d4f; vertical-align: middle; line-height: 1;">v2.00</span>
+            </a>
             <div class="navbar-nav">
                 <div class="nav-link active" onclick="showPage('status')">📊 账号状态</div>
                 <div class="nav-link" onclick="showPage('tools')">🧰 工具箱</div>
@@ -141,7 +145,7 @@
                 <div class="nav-link" onclick="showPage('logs')">📝 运行日志</div>
                 <a class="nav-link" href="/license.html" title="查看或更新系统授权">🔐 授权中心</a>
                 <a class="nav-link" href="/boss-assist.html" target="_blank" style="text-decoration: none;">🏰
-                    BOSS塔助战</a>
+                    版本2.0</a>
             </div>
         </div>
     </nav>
@@ -209,15 +213,18 @@
                 <div class="upload-hint" id="uploadHint">支持 .bin 格式文件，上传后自动转换Token</div>
                 <input type="file" id="fileInput" accept=".bin" multiple>
             </div>
-            <div id="uploadProgressArea" style="display:none;margin:-8px 0 16px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+            <div id="uploadProgressArea"
+                style="display:none;margin:-8px 0 16px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                     <span id="uploadProgressLabel" style="font-size:13px;color:#334155;font-weight:500;">准备上传...</span>
                     <span id="uploadProgressText" style="font-size:12px;color:#64748b;">0/0</span>
                 </div>
                 <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
-                    <div id="uploadProgressBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.3s;"></div>
+                    <div id="uploadProgressBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.3s;">
+                    </div>
                 </div>
-                <div id="uploadResultList" style="margin-top:8px;font-size:12px;max-height:120px;overflow-y:auto;"></div>
+                <div id="uploadResultList" style="margin-top:8px;font-size:12px;max-height:120px;overflow-y:auto;">
+                </div>
             </div>
             <div class="file-list">
                 <div class="file-list-header">
@@ -907,12 +914,15 @@
             <div class="batch-footer">
                 <div class="batch-count">已选 <strong id="batchSelectedCount2">0</strong> 个账号</div>
                 <div id="batchProgressArea" style="display:none;flex:1;margin:0 16px;">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:3px;">
+                    <div
+                        style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:3px;">
                         <span id="batchProgressLabel">保存中...</span>
                         <span id="batchProgressText">0/0</span>
                     </div>
                     <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
-                        <div id="batchProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#10b981);border-radius:3px;transition:width 0.2s;"></div>
+                        <div id="batchProgressBar"
+                            style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#10b981);border-radius:3px;transition:width 0.2s;">
+                        </div>
                     </div>
                 </div>
                 <div class="btn-group">
@@ -2751,7 +2761,7 @@
 
             // 刷新文件列表
             setTimeout(() => loadBinFiles(), 1000);
-            
+
             // 5秒后自动隐藏进度并解除锁定
             setTimeout(() => {
                 progressArea.style.display = 'none';

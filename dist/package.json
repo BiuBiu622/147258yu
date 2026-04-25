@@ -1,6 +1,6 @@
 {
   "name": "xyzw-wss-cli",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "XYZW游戏自动化命令行工具",
   "main": "index.js",
   "type": "module",
