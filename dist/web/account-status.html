@@ -1622,6 +1622,22 @@
                 }
             }
 
+            // 寻宝任务
+            let treasureBadge = '<span class="badge-sm gray">未执行</span>';
+            const tb = status?.寻宝任务;
+            if (tb) {
+                if (tb.状态 === 'notOpen') {
+                    treasureBadge = '<span class="badge-sm gray">未开放</span>';
+                } else if (tb.状态 === 'failed') {
+                    treasureBadge = '<span class="badge-sm danger">失败</span>';
+                } else if (tb.状态 === 'success') {
+                    const win = tb.胜利次数 || 0;
+                    const lose = tb.失败次数 || 0;
+                    const used = tb.今日已用票数 || 0;
+                    treasureBadge = `<span class="badge-sm success">胜${win}负${lose} (票:${used})</span>`;
+                }
+            }
+
             return `<tr id="detail-row-${name}" class="detail-row"><td colspan="6"><div class="detail-panel-v2"><div class="task-groups">
                 <div class="task-group"><div class="task-group-header daily">📋 每日任务</div><div class="task-group-body">
                     <div class="task-item"><span class="task-item-name">俱乐部签到</span>${signinBadge}</div>
@@ -1644,6 +1660,7 @@
                     <div class="task-item"><span class="task-item-name">黑市周购买</span>${blackMarketBadge}</div>
                     <div class="task-item"><span class="task-item-name">钓鱼月度</span>${fishBadge}</div>
                     <div class="task-item"><span class="task-item-name">竞技场月度</span>${arenaMonthBadge}</div>
+                    <div class="task-item"><span class="task-item-name">寻宝任务</span>${treasureBadge}</div>
                 </div></div>
             </div></div></td></tr>`;
         }
@@ -1710,6 +1727,16 @@
                         </div>
                         <div class="config-grid cols-1">
                             ${item('阵容', num('咸将塔', '爬塔阵容', c.咸将塔?.爬塔阵容 || 1, 1, 5))}
+                        </div>
+                    </div>
+                    <div class="config-section narrow">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🗺️ 寻宝任务</span>
+                            ${sw('寻宝任务', '启用', c.寻宝任务?.启用 !== false)}
+                        </div>
+                        <div class="config-grid cols-1">
+                            ${item('阵容', num('寻宝任务', '使用阵容', c.寻宝任务?.使用阵容 || 1, 1, 5))}
+                            ${item('每日票数', num('寻宝任务', '每日使用票数', c.寻宝任务?.每日使用票数 || 5, 0, 10))}
                         </div>
                     </div>
                     <div class="config-section">
@@ -1876,6 +1903,12 @@
                         <div class="config-section-header">
                             <span class="config-section-title">🗼 咸将塔</span>
                             ${gsw('咸将塔', '启用')}
+                        </div>
+                    </div>
+                    <div class="config-section narrow">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🗺️ 寻宝任务</span>
+                            ${gsw('寻宝任务', '启用')}
                         </div>
                     </div>
                     <div class="config-section">
@@ -2076,6 +2109,7 @@
                 'BOSS战斗': { '启用': true, '战斗次数': 2, 'BOSS阵容': 1 },
                 '盐罐机器': { '启用': true, '领取残卷': true },
                 '咸将塔': { '启用': false, '爬塔阵容': 1, '最大小鱼干数': 10 },
+                '寻宝任务': { '启用': true, '使用阵容': 1, '每日使用票数': 5 },
                 '挂机奖励': true,
                 '俱乐部签到': true,
                 '每日咸王': true,
@@ -2256,6 +2290,16 @@
                         <div class="config-grid cols-2">
                             ${item('阵容', num('咸将塔', '爬塔阵容', 1, 1, 5))}
                             ${item('最大小鱼干', num('咸将塔', '最大小鱼干数', 10, 1, 50))}
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <div class="config-section-header">
+                            <span class="config-section-title">🗺️ 寻宝任务</span>
+                            ${sw('寻宝任务', '启用', true)}
+                        </div>
+                        <div class="config-grid cols-2">
+                            ${item('阵容', num('寻宝任务', '使用阵容', 1, 1, 5))}
+                            ${item('每日票数', num('寻宝任务', '每日使用票数', 5, 0, 10))}
                         </div>
                     </div>
                     <div class="config-section">
